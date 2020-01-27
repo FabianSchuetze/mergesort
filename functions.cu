@@ -72,6 +72,8 @@ __global__ void merge_basic_kernel(int* A, int m, int* B, int n, int* C) {
     co_rank(k_next, A, m, B, n, &i_next);
     int j_curr = k_curr - i_curr;
     int j_next = k_next - i_next;
+    printf("i_curr %i, i_next %i, j_curr %i, j_next %i, tid %d\n", 
+           i_curr, i_next, j_curr, j_next, tid);
     merge_sequential(&A[i_curr], i_next - i_curr, &B[j_curr], 
                      j_next-j_curr, &C[k_curr]);
 }
@@ -84,10 +86,10 @@ int main() {
     B = new int[4];
     C = new int[9];
     A[0] = 1;
-    A[2] = 7;
-    A[3] = 8;
-    A[4] = 9;
-    A[5] = 10;
+    A[1] = 7;
+    A[2] = 8;
+    A[3] = 9;
+    A[4] = 10;
     B[0] = 7;
     B[1] = 10;
     B[2] = 10;
@@ -105,7 +107,6 @@ int main() {
     dim3 gridDim(3);
     merge_basic_kernel<<<blockDim, gridDim>>>(d_A, 5, d_B, 4, d_C);
     CHECK(cudaDeviceSynchronize());
-    printf("Completed\n");
     CHECK(cudaMemcpy(C, d_C, 9 * sizeof(int), cudaMemcpyDeviceToHost));
     for (int i = 0; i < 9; ++i) {
         printf("at %i we have %i\n",i, C[i]);
