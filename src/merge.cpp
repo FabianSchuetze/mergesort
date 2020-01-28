@@ -1,3 +1,4 @@
+#include "../include/merge.h"
 // Merges the two arrays A and B into C; A and B are assumed to be ordered
 void merge(const int* A, int m, const int* B, int n, int* C) {
     int i = 0;  // index A

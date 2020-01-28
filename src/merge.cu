@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include "../include/merge.h"
 #define CHECK(call)                                                \
     {                                                              \
         const cudaError_t error = call;                            \
