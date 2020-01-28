@@ -76,10 +76,10 @@ __global__ void merge_basic_kernel(int* A, int m, int* B, int n, int* C) {
     co_rank(k_next, A, m, B, n, &i_next);
     int j_curr = k_curr - i_curr;
     int j_next = k_next - i_next;
-    printf(
-        "k_curr %d, k_next %i "
-        "i_curr %i, i_next %i, j_curr %i, j_next %i, tid %d\n",
-        k_curr, k_next, i_curr, i_next, j_curr, j_next, tid);
+    //printf(
+        //"k_curr %d, k_next %i "
+        //"i_curr %i, i_next %i, j_curr %i, j_next %i, tid %d\n",
+        //k_curr, k_next, i_curr, i_next, j_curr, j_next, tid);
     merge_sequential(&A[i_curr], i_next - i_curr, &B[j_curr], j_next - j_curr,
                      &C[k_curr]);
 }
@@ -100,12 +100,12 @@ void cuda_merge(const int* A, int m, const int* B, int n, int* C) {
     CHECK(cudaMemcpy(d_A, A, m * sizeof(int), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_B, B, n * sizeof(int), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_C, C, (m + n) * sizeof(int), cudaMemcpyHostToDevice));
-    dim3 blockDim(1);
-    dim3 gridDim(10); //ten threads, likely bug is too many selected
+    dim3 blockDim(4);
+    dim3 gridDim(128); //ten threads, likely bug is too many selected
     double cpuStart = cpuSecond();
     merge_basic_kernel<<<blockDim, gridDim>>>(d_A, m, d_B, n, d_C);
     CHECK(cudaDeviceSynchronize());
     double cpuEnd = cpuSecond() - cpuStart;
-    printf("The GPU took %.3f", cpuEnd);
+    printf("The GPU took %.7f\n", cpuEnd);
     CHECK(cudaMemcpy(C, d_C, (m + n) * sizeof(int), cudaMemcpyDeviceToHost));
 }
