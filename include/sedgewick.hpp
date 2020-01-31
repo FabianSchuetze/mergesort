@@ -14,7 +14,7 @@ class Sedgwick {
 
 class GPUMergeSort {
    public:
-    void sort(std::vector<int>&);
+   std::vector<int> sort(std::vector<int>&);
 
    private:
     std::vector<int> aux;

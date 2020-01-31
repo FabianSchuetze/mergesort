@@ -34,13 +34,13 @@ __global__ void gpu_mergesort(int* src, int* dest, int size, int width) {
 }
 
 void merge_sort(int* src, int* dest, int size) {
-    dim3 blockDim(1);
-    dim3 gridDim(3);  // ten threads, likely bug is too many selected
+    dim3 blockDim(10);
+    dim3 gridDim(128);  // ten threads, likely bug is too many selected
     int width = 2;
     while (true) {
         gpu_mergesort<<<blockDim, gridDim>>>(src, dest, size, width);
-        MY_CHECK(cudaDeviceSynchronize());
-        printf("End of the mergesort with width %i\n", width);
+        //MY_CHECK(cudaDeviceSynchronize());
+        //printf("End of the mergesort with width %i\n", width);
         if (width > size)
             break;
         width *= 2;
