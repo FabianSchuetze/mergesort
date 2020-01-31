@@ -6,11 +6,14 @@ set(LIBRARY_TARGET_NAME ${PROJECT_NAME})
 
 set(CUDA_HOST_COMPILER nvcc)
 enable_language(CUDA)
-ADD_LIBRARY(cuda_obj SHARED src/merge.cu) # works for me now
+ADD_LIBRARY(cuda_obj SHARED src/merge.cu
+                            src/my_mergesort.cu) # works for me now
 
 set(${LIBRARY_TARGET_NAME}_SRC
     src/merge.cpp
-    src/segedwick.cpp
+    src/sedgewick.cpp
+    src/mergesort.cpp
+    src/storage.cpp
 )
 
 if (UNIX)
@@ -19,7 +22,8 @@ endif(UNIX)
 
 # moved the CXX flags to after the cuda_add_library call
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fPIC\
-    -Wall -std=c++17 -Wno-error=unused-command-line-argument")
+    -Wall -std=c++17 -Wno-error=unused-command-line-argument\
+    -lcurand -L /usr/lib/cuda/lib64 -lcudart  -lcublas")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-g -O3")
 

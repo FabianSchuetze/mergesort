@@ -1,5 +1,5 @@
 #include <vector>
-#include "../include/Segedwick.hpp"
+#include "../include/sedgewick.hpp"
 #include <iostream>
 #include <string>
 int main() {

@@ -1,4 +1,4 @@
-#include "../include/Segedwick.hpp"
+#include "../include/sedgewick.hpp"
 #include <iostream>
 
 template <class T>
