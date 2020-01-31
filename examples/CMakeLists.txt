@@ -1,5 +1,6 @@
 set(${LIBRARY_TARGET_NAME}_TEST
     main.cpp
+    segedwick.cpp
 )
 
 foreach( testsourcefile ${${LIBRARY_TARGET_NAME}_TEST} )

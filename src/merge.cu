@@ -37,7 +37,7 @@ __device__ void merge_sequential(int* A, int m, int* B, int n, int* C) {
     }
 }
 
-//Intifies location in A for range of merging
+//Identifies location in A for range of merging
 __device__ void co_rank(int k, const int* A, int m, const int* B, int n, 
                         int* out) {
     int i = k < m ? k : m;
@@ -66,7 +66,6 @@ __device__ void co_rank(int k, const int* A, int m, const int* B, int n,
 
 __global__ void merge_basic_kernel(int* A, int m, int* B, int n, int* C) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    // printf("the tid is: %i\n", tid);
     float sum = m + n;
     int k_curr = tid * ceilf((sum) / (blockDim.x * gridDim.x));
     int k_next = min((tid + 1) * ceilf(sum / (blockDim.x * gridDim.x)), sum);

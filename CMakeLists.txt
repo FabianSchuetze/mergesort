@@ -10,6 +10,7 @@ ADD_LIBRARY(cuda_obj SHARED src/merge.cu) # works for me now
 
 set(${LIBRARY_TARGET_NAME}_SRC
     src/merge.cpp
+    src/segedwick.cpp
 )
 
 if (UNIX)
