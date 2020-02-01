@@ -37,8 +37,8 @@ __device__ void merge_sequential(int* A, int m, int* B, int n, int* C) {
     }
 }
 
-//Identifies location in A for range of merging
-__device__ void co_rank(int k, const int* A, int m, const int* B, int n, 
+// Identifies location in A for range of merging
+__device__ void co_rank(int k, const int* A, int m, const int* B, int n,
                         int* out) {
     int i = k < m ? k : m;
     int j = k - i;
@@ -64,47 +64,50 @@ __device__ void co_rank(int k, const int* A, int m, const int* B, int n,
     out[0] = i;
 }
 
-__global__ void merge_basic_kernel(int* A, int m, int* B, int n, int* C) {
+__global__ void merge_basic_kernel(int* A, int m, int n, int* C) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     float sum = m + n;
     int k_curr = tid * ceilf((sum) / (blockDim.x * gridDim.x));
     int k_next = min((tid + 1) * ceilf(sum / (blockDim.x * gridDim.x)), sum);
     int i_curr;
     int i_next;
-    co_rank(k_curr, A, m, B, n, &i_curr);
-    co_rank(k_next, A, m, B, n, &i_next);
+    co_rank(k_curr, A, m, &A[m], n, &i_curr);
+    co_rank(k_next, A, m, &A[m], n, &i_next);
     int j_curr = k_curr - i_curr;
     int j_next = k_next - i_next;
-    //printf(
-        //"k_curr %d, k_next %i "
-        //"i_curr %i, i_next %i, j_curr %i, j_next %i, tid %d\n",
-        //k_curr, k_next, i_curr, i_next, j_curr, j_next, tid);
-    merge_sequential(&A[i_curr], i_next - i_curr, &B[j_curr], j_next - j_curr,
-                     &C[k_curr]);
+    // printf(
+    //"k_curr %d, k_next %i "
+    //"i_curr %i, i_next %i, j_curr %i, j_next %i, tid %d\n",
+    // k_curr, k_next, i_curr, i_next, j_curr, j_next, tid);
+    merge_sequential(&A[i_curr], i_next - i_curr, &A[m + j_curr],
+                     j_next - j_curr, &C[k_curr]);
 }
 
-double cpuSecond() {
+double cpuSecond3() {
     struct timeval tp;
     gettimeofday(&tp, NULL);
     return ((double)tp.tv_sec + (double)tp.tv_usec * 1e-6);
 }
-
-void cuda_merge(const int* A, int m, const int* B, int n, int* C) {
+void cuda_merge(const int* A, int m, int n, int* C) {
     int* d_A;
-    int* d_B;
     int* d_C;
-    CHECK(cudaMalloc((void**)&d_A, m * sizeof(int)));
-    CHECK(cudaMalloc((void**)&d_B, n * sizeof(int)));
+    CHECK(cudaMalloc((void**)&d_A, (m + n) * sizeof(int)));
     CHECK(cudaMalloc((void**)&d_C, (m + n) * sizeof(int)));
-    CHECK(cudaMemcpy(d_A, A, m * sizeof(int), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(d_B, B, n * sizeof(int), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_A, A, (m + n) * sizeof(int), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_C, C, (m + n) * sizeof(int), cudaMemcpyHostToDevice));
-    dim3 blockDim(4);
-    dim3 gridDim(128); //ten threads, likely bug is too many selected
-    double cpuStart = cpuSecond();
-    merge_basic_kernel<<<blockDim, gridDim>>>(d_A, m, d_B, n, d_C);
+    dim3 blockDim(100);
+    dim3 gridDim(128);  // ten threads, likely bug is too many selected
+    double cpuStart = cpuSecond3();
+    int width = std::pow(2, 15);
+    for (int i = 0; i < m + n;) {
+        merge_basic_kernel<<<blockDim, gridDim>>>(&d_A[i], width, width,
+                                                  &d_C[i]);
+        i += width * 2;
+        printf("iter number %i\n", i);
+    }
+    merge_basic_kernel<<<blockDim, gridDim>>>(d_C, 2 * width, 2 * width, d_A);
     CHECK(cudaDeviceSynchronize());
-    double cpuEnd = cpuSecond() - cpuStart;
+    double cpuEnd = cpuSecond3() - cpuStart;
     printf("The GPU took %.7f\n", cpuEnd);
-    CHECK(cudaMemcpy(C, d_C, (m + n) * sizeof(int), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(C, d_A, (m + n) * sizeof(int), cudaMemcpyDeviceToHost));
 }
