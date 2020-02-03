@@ -47,12 +47,12 @@ __global__ void pmergesort(int*A , int p, int r, int* B, int s) {
     if (n == 1)
         B[s] = A[p];
     else {
-        int* T = new int[n];
+        //int* T = new int[n];
         int q = (p + r) / 2;
         int qprime = q - p + 1;
         //spawn
-        pmergesort<<<1, 1>>>(A[p], 0, q -p , T[1], 0);
-        pmergesort<<<1, 1>>>(A[q+1], 0, r - q  -1, T[qprime + 1],0);
+        pmergesort<<<1, 1>>>(&A[p], 0, q -p , &T[1], 0);
+        pmergesort<<<1, 1>>>(&A[q+1], 0, r - q  -1, &T[qprime + 1],0);
         //cudaDeviceSynchronize();
         //sync;
         pmerge<<<1, 1>>>(T, 1, qprime, qprime + 1, n, B, s);
@@ -64,35 +64,35 @@ double cpuSecond() {
     gettimeofday(&tp, NULL);
     return ((double)tp.tv_sec + (double)tp.tv_usec * 1e-6);
 }
-//void p_merge_sort(int* A, int size_A, int* B) {
-    //int* d_A;
-    //int* d_B;
-    //MY_CHECK(cudaMalloc((void**)&d_A, size_A * sizeof(int)));
-    //MY_CHECK(cudaMalloc((void**)&d_B, size_A * sizeof(int)));
-    //MY_CHECK(cudaMemcpy(d_A, A, size_A * sizeof(int), cudaMemcpyHostToDevice));
-    //double begin = cpuSecond();
-    //pmergesort<<<1, 1>>>(d_A, 0, size_A, d_B, 0);
-    //MY_CHECK(cudaDeviceSynchronize());
-    //double end = cpuSecond() - begin;
-    //printf("the gpu took: %.5f",end);
-    //MY_CHECK(cudaMemcpy(A, d_B, size_A * sizeof(int), cudaMemcpyDeviceToHost));
-    ////printf("the thing is (%i, %i, %i, %i, %i)\n", A[0], A[1], A[2], A[3],A[4]);
-//}
-
-int main() {
-    int* A = new int[5];
-    A[0] = 10;
-    A[1] = -10;
-    A[2] = 5;
-    A[3] = 20;
-    A[4] = -100;
+void p_merge_sort(int* A, int size_A, int* B) {
     int* d_A;
     int* d_B;
-    MY_CHECK(cudaMalloc((void**)&d_A, 5 * sizeof(int)));
-    MY_CHECK(cudaMalloc((void**)&d_B, 5 * sizeof(int)));
-    MY_CHECK(cudaMemcpy(d_A, A, 5 * sizeof(int), cudaMemcpyHostToDevice));
-    pmergesort<<<1, 1>>>(d_A, 0, 5, d_B, 0);
-    //MY_CHECK(cudaDeviceSynchronize());
-    MY_CHECK(cudaMemcpy(A, d_B, 5 * sizeof(int), cudaMemcpyDeviceToHost));
-    printf("the thing is (%i, %i, %i, %i, %i)", A[0], A[1], A[2], A[3],A[4]);
+    MY_CHECK(cudaMalloc((void**)&d_A, size_A * sizeof(int)));
+    MY_CHECK(cudaMalloc((void**)&d_B, size_A * sizeof(int)));
+    MY_CHECK(cudaMemcpy(d_A, A, size_A * sizeof(int), cudaMemcpyHostToDevice));
+    double begin = cpuSecond();
+    pmergesort<<<1, 1>>>(d_A, 0, size_A, d_B, 0);
+    MY_CHECK(cudaDeviceSynchronize());
+    double end = cpuSecond() - begin;
+    printf("the gpu took: %.5f",end);
+    MY_CHECK(cudaMemcpy(A, d_B, size_A * sizeof(int), cudaMemcpyDeviceToHost));
+    //printf("the thing is (%i, %i, %i, %i, %i)\n", A[0], A[1], A[2], A[3],A[4]);
 }
+
+//int main() {
+    //int* A = new int[5];
+    //A[0] = 10;
+    //A[1] = -10;
+    //A[2] = 5;
+    //A[3] = 20;
+    //A[4] = -100;
+    //int* d_A;
+    //int* d_B;
+    //MY_CHECK(cudaMalloc((void**)&d_A, 5 * sizeof(int)));
+    //MY_CHECK(cudaMalloc((void**)&d_B, 5 * sizeof(int)));
+    //MY_CHECK(cudaMemcpy(d_A, A, 5 * sizeof(int), cudaMemcpyHostToDevice));
+    //pmergesort<<<1, 1>>>(d_A, 0, 5, d_B, 0);
+    ////MY_CHECK(cudaDeviceSynchronize());
+    //MY_CHECK(cudaMemcpy(A, d_B, 5 * sizeof(int), cudaMemcpyDeviceToHost));
+    //printf("the thing is (%i, %i, %i, %i, %i)", A[0], A[1], A[2], A[3],A[4]);
+//}

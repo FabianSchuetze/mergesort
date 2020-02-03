@@ -24,12 +24,12 @@ double cpuSecond() {
 
 int main() {
     //std::vector<int>a = {10, -5, 20, -100, -300};
-    std::vector<int>a = variables(100000, -100000,100000);
+    std::vector<int>a = variables(1000000, -100000,100000);
     //for (auto i : a) {
         //std::cout << i << std::endl;
     //}
-    GPUMergeSort seg;
-    std::vector<int> result = seg.sort(a);
+    //GPUMergeSort seg;
+    //std::vector<int> result = seg.sort(a);
     //for (auto i : result) {
         //std::cout << i << ", ";
     //}
@@ -39,7 +39,7 @@ int main() {
     seg_cpu.sort(a);;
     double cpuEnd = cpuSecond()- cpuBegin;
     std::cout << "the cpu took: " << cpuEnd << std::endl;
-    //for (auto i : a) {
-        //std::cout << i << ", ";
-    //}
+    for (auto i : a) {
+        std::cout << i << "\n";
+    }
 }

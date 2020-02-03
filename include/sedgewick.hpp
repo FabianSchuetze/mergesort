@@ -7,9 +7,9 @@ class Sedgwick {
     void sort(std::vector<T>&);
 
    private:
-    std::vector<T> aux;
-    void sort(std::vector<T>& a, int low, int high);
-    void merge(std::vector<T>& a, int low, int mid, int high);
+    //std::vector<T> aux;
+    void sort(T* a, int low, int high, T* tmp);
+    void merge(T* a, int low, int mid, int high, T*);
 };
 
 class GPUMergeSort {

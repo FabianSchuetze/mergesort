@@ -1,6 +1,7 @@
 set(${LIBRARY_TARGET_NAME}_TEST
     main.cpp
     sedgewick.cpp
+    #pmergesort.cpp
 )
 
 foreach( testsourcefile ${${LIBRARY_TARGET_NAME}_TEST} )

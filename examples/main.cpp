@@ -22,6 +22,7 @@ std::vector<int> variables(int size, int min, int max) {
     for (int i = 0; i < size; ++i) {
         res[i] = uni(rng);
     }
+    std::sort(res.begin(), res.end());
     return res;
 }
 //vector<int> read_array(const std::string& file) {
@@ -44,23 +45,34 @@ void dump_files(const vector<int>& gpu) {
 }
 
 int main() {
-    int size = std::pow(2, 15);
-    vector<int> A;
-    for (int i = 0; i < 4; ++i) {
-        vector<int> tmp = variables(size, -100000, 100000);
-        std::sort(tmp.begin(), tmp.end());
-        A.insert(A.end(), tmp.begin(), tmp.end());
-    }
-    //vector<int> A = read_array("A.out");
+    int size = 32000;
+    vector<int> A = variables(size, -100000, 100000);
+    vector<int> B = variables(size, -100000, 100000);
     //vector<int> B = read_array("B.out");
-    //int A_size = A.size();
-    //A.insert( A.end(), B.begin(), B.end() );
-    vector<int> C(A.size());
+    vector<int> C(A.size() + B.size());
     //vector<int> D(A.size() + B.size());
-    cuda_merge(A.data(), size*2,  size*2, C.data());
-    double cpuStart = cpuSecond2();
-    std::sort(A.begin(), A.end());
-    double end = cpuSecond2() - cpuStart;
-    std::cout << "The cpu took: " << end << std::endl;
+    cuda_merge(A.data(), A.size(),  B.data(), B.size(), C.data());
     dump_files(C);
 }
+
+//int main() {
+    //int size = std::pow(2, 15);
+    //vector<int> A;
+    //for (int i = 0; i < 4; ++i) {
+        //vector<int> tmp = variables(size, -100000, 100000);
+        //std::sort(tmp.begin(), tmp.end());
+        //A.insert(A.end(), tmp.begin(), tmp.end());
+    //}
+    ////vector<int> A = read_array("A.out");
+    ////vector<int> B = read_array("B.out");
+    ////int A_size = A.size();
+    ////A.insert( A.end(), B.begin(), B.end() );
+    //vector<int> C(A.size());
+    ////vector<int> D(A.size() + B.size());
+    //cuda_merge(A.data(), size*2,  size*2, C.data());
+    //double cpuStart = cpuSecond2();
+    //std::sort(A.begin(), A.end());
+    //double end = cpuSecond2() - cpuStart;
+    //std::cout << "The cpu took: " << end << std::endl;
+    //dump_files(C);
+//}
