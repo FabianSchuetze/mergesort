@@ -6,14 +6,10 @@ set(LIBRARY_TARGET_NAME ${PROJECT_NAME})
 
 set(CUDA_HOST_COMPILER /usr/local/cuda-10.2/bin/nvcc)
 enable_language(CUDA)
-ADD_LIBRARY(cuda_obj SHARED src/merge.cu
-                            src/my_mergesort.cu)
-                            #src/pmergesort.cu) # works for me now
+ADD_LIBRARY(cuda_obj SHARED src/mergesort.cu)
 
 set(${LIBRARY_TARGET_NAME}_SRC
     src/merge.cpp
-    src/sedgewick.cpp
-    src/mergesort.cpp
     src/storage.cpp
 )
 
