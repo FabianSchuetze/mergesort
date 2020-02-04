@@ -79,6 +79,7 @@ if __name__ == "__main__":
     PREV_CUTOFF = 0
     PREV_INVERSE = 0
     IT = 0
+    SIZE = 16
     for DIAG in [16, 32, 48, 64]:
         CUTOFF = mergepath(A, 32, B, 32, DIAG)
         # a_s, b_s = intersection(A, 8, B, DIAG)
@@ -89,7 +90,7 @@ if __name__ == "__main__":
         print('and the list for B is: ', end='')
         print(B[PREV_INVERSE: INV])
         merge(A[PREV_CUTOFF:CUTOFF], CUTOFF - PREV_CUTOFF,
-              B[PREV_INVERSE:INV], C, 4, IT)
+              B[PREV_INVERSE:INV], C, 16, IT)
         PREV_CUTOFF = CUTOFF
         PREV_INVERSE = INV
         IT += 1
