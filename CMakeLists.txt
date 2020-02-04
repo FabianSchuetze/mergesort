@@ -5,6 +5,7 @@ project(GPU_Mergesort LANGUAGES CUDA CXX)
 set(LIBRARY_TARGET_NAME ${PROJECT_NAME})
 
 set(CUDA_HOST_COMPILER /usr/local/cuda-10.2/bin/nvcc)
+set(CMAKE_CUDA_FLAGS "-Xcompiler -rdynamic -lineinfo")
 enable_language(CUDA)
 ADD_LIBRARY(cuda_obj SHARED src/mergesort.cu)
 
