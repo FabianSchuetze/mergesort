@@ -64,16 +64,19 @@ def parallelMerge(process, list_a, list_b, length):
 
 
 if __name__ == "__main__":
-    SIZE = 32
-    A = list(np.sort(np.random.randint(-100, 100, 16)))
-    B = list(np.sort(np.random.randint(-100, 100, 16)))
+    SIZE = int(4 ** 10)
+    A = list(np.sort(np.random.randint(-10000, 10000, int(SIZE / 2))))
+    B = list(np.sort(np.random.randint(-10000, 10000, int(SIZE / 2))))
     # A = [17, 29, 35, 73, 86, 90, 95, 99]
-    C1 = [0]*SIZE
-    C = multiprocessing.Array('i', C1, lock=False)
+    C = [0]*SIZE
+    # C = multiprocessing.Array('i', C1, lock=False)
     # B = [3, 5, 12, 22, 45, 64, 69, 82]
-    inputs = [(i, A, B, 8) for i in range(4)]
+    inputs = [(i, A, B, int(SIZE / 4)) for i in range(4)]
+    start = time.time()
     # for step in range(4):
-        # parallelMerge(step, A, B, 8)
+        # parallelMerge(step, A, B, int(SIZE / 4))
     with Pool(4) as pool:
         pool.starmap(parallelMerge, inputs)
+    end = time.time()
+    print("It took %.5f second\n" %(end - start))
 
