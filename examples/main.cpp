@@ -33,25 +33,25 @@ std::vector<int> variables(int size, int width) {
 //}
 
 int main() {
-    int size = 8;
-    int width = 20;
+    int size = std::pow(2,11);
+    int processes = 2;
+    int width = 50;
     vector<int> A = variables(size, width);
     vector<int> B = variables(size, width);
-    for (int i : A) 
-        std::cout << i << ", ";
-    std::cout << "\nAnd B contains:\n";
-    for (int i : B)
-        std::cout << i << ", ";
-    std::cout << "\nmerged:\n";
+    //for (int i : A) 
+        //std::cout << i << ", ";
+    //std::cout << "\nAnd B contains:\n";
+    //for (int i : B)
+        //std::cout << i << ", ";
+    //std::cout << "\nmerged:\n";
     vector<int> C(A.size() + B.size());
     Storage s_a(A);
     Storage s_b(B);
     Storage s_c(C);
     cuda_merge(s_a.gpu_pointer_const(), A.size(), s_b.gpu_pointer_const(),
-               B.size(), s_c.gpu_pointer(), 8);
-    for (int i : s_c.return_data_const()) {
-        std::cout << i << ", ";
-    }
-    // dump_files(C);
+               B.size(), s_c.gpu_pointer(), processes);
+    //for (int i : s_c.return_data_const()) {
+        //std::cout << i << ", ";
+    //}
 }
 
