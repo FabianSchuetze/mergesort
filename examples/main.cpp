@@ -33,8 +33,8 @@ std::vector<int> variables(int size, int width) {
 //}
 
 int main() {
-    int size = std::pow(2,11);
-    int processes = 2;
+    int size = std::pow(2,14);
+    int processes = 8;
     int width = 50;
     vector<int> A = variables(size, width);
     vector<int> B = variables(size, width);

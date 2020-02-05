@@ -62,6 +62,9 @@ __global__ void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
     extern __shared__ int shared[];
     for (int i = 0; i < length; ++i) {
         int pos = (i + diag) / 2;
+        if (blockIdx.x == 5) {
+            printf("pos %i\n", pos);
+        }
         shared[pos] = a[pos];
         shared[sz_a + pos] = b[pos];
     }
@@ -74,9 +77,14 @@ __global__ void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
 
 void cuda_merge(const int* d_A, int sz_a, const int* d_B, int sz_b, int* d_C,
                 int processes) {
-    int length = (sz_a + sz_b) / processes;
-    int size_shared = (sz_a + sz_b) * 2 * sizeof(int);
-    dim3 blockDim(1);
+    cudaDeviceProp dev_prop;
+    cudaGetDeviceProperties(&dev_prop, 0);
+    int size_shared =  dev_prop.sharedMemPerBlock;
+    int number_blocks = (sz_a + sz_b) * sizeof(int) / size_shared + 10;
+    //int size_shared = (sz_a + sz_b) * 2 * sizeof(int);
+    int length = (sz_a + sz_b) / (processes * number_blocks);
+    printf("the length is %i\n", length);
+    dim3 blockDim(number_blocks);
     dim3 gridDim(processes);  // ten threads, likely bug is too many selected
     double beg = cpuSecond();
     paralleMerge<<<blockDim, gridDim, size_shared>>>(d_A, sz_a, d_B, sz_b, d_C,
