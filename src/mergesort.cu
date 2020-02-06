@@ -48,7 +48,9 @@ __device__ void loadtodevice(const int* a, int sz_a, const int* b, int sz_b,
         (gridDim.x - 1 > blockIdx.x) ? boundaries[blockIdx.x + 1] : sz_a;
     int start_a = threadIdx.x;
     while (start_block_a + start_a < end_block_a) {
-        shared[threadIdx.x] = a[start_a + start_block_a];
+        shared[start_a] = a[start_a + start_block_a];
+        printf("shared at %i with block %i is: %i\n", start_a, blockIdx.x,
+               shared[start_a]);
         start_a += blockDim.x;
     }
     int start_block = boundaries[blockIdx.x + gridDim.x];
@@ -57,11 +59,12 @@ __device__ void loadtodevice(const int* a, int sz_a, const int* b, int sz_b,
                         : sz_b;
     start_a = threadIdx.x;
     while (start_block + start_a < end_block) {
-        shared[end_block_a - start_block_a + threadIdx.x] =
+        shared[end_block_a - start_block_a + start_a] =
             b[start_a + start_block];
         start_a += blockDim.x;
     }
 }
+
 __device__ void devicetoglobal(const int* shared, int sz_a, int sz_b,
                                const int* boundaries, int* c) {
     int start_block_a = boundaries[blockIdx.x];
@@ -69,7 +72,7 @@ __device__ void devicetoglobal(const int* shared, int sz_a, int sz_b,
         (gridDim.x - 1 > blockIdx.x) ? boundaries[blockIdx.x + 1] : sz_a;
     int start_a = threadIdx.x;
     while (start_block_a + start_a < end_block_a) {
-        c[start_a + start_block_a] = shared[threadIdx.x];
+        c[start_a + start_block_a] = shared[start_a];
         start_a += blockDim.x;
     }
     int start_block = boundaries[blockIdx.x + gridDim.x];
@@ -79,7 +82,7 @@ __device__ void devicetoglobal(const int* shared, int sz_a, int sz_b,
                         : sz_b;
     while (start_block + start_a < end_block) {
         c[sz_a + start_a + start_block] =
-            shared[end_block_a - start_block_a + threadIdx.x];
+            shared[end_block_a - start_block_a + start_a];
         start_a += blockDim.x;
     }
 }
@@ -115,7 +118,7 @@ __global__ void determine_range(const int* a, int sz_a, const int* b, int sz_b,
 void cuda_merge(const int* d_A, int sz_a, const int* d_B, int sz_b, int* d_C,
                 int length) {
     dim3 blockDim(10);
-    int size_shared = 4;
+    int size_shared = 25;
     int n_blocks = ceilf((sz_a + sz_b) / size_shared);
     dim3 gridDim(n_blocks);  // ten threads, likely bug is too many selected
     int boundaries[2 * n_blocks];
@@ -140,4 +143,5 @@ void cuda_merge(const int* d_A, int sz_a, const int* d_B, int sz_b, int* d_C,
     //}
     paralleMerge<<<gridDim, blockDim, size_shared * 2 * sizeof(int)>>>(
         d_A, sz_a, d_B, sz_b, d_C, d_boundaries, length);
+    MY_CHECK(cudaDeviceSynchronize());
 }
