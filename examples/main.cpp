@@ -60,10 +60,7 @@ int main() {
                                 s_c.return_data_const().end(), cpu.begin());
         if (!equal) {
             std::cout << "for size " << size << "the results are not equal\n";
-            // return 1;
-            // exit(1);
         }
-        // std::cout << "It took the CPU: " << end << std::endl;
     }
     for (int i : sizes) {
         std::cout << i << ", " << cpu_times[i] << ", " << gpu_times[i]

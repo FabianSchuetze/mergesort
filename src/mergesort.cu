@@ -146,12 +146,9 @@ __device__ void merge2(int* a, int start_a, int sz_a, int* b, int start_b,
 
 __global__ void paralleMerge3(int* a, int sz_a, int* b, int sz_b, int* c,
                               int length) {
-    //printf("inside the function with %i\n", threadIdx.x);
     int diag = threadIdx.x * length;
     int a_start = mergepath(a, sz_a, b, sz_b, diag);
     int b_start = diag - a_start;
-    //printf("The start values for the thread %i are (%i, %i)\n", threadIdx.x,
-           //a_start, b_start);
     merge2(a, a_start, sz_a, b, b_start, sz_b, c, diag, length);
 }
 
