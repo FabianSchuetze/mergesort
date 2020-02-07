@@ -27,30 +27,30 @@ std::vector<int> variables(int size, int width) {
     return res;
 }
 
-// void dump_files(const vector<int>& gpu) {
-// std::ofstream outFile1("check_gpu_out.txt");
-// for (const auto& c : gpu) outFile1 << c << "\n";
-//}
-
 int main() {
-    //int size = std::pow(2,14);
-    //int processes = 8;
-    int width = 50;
-    vector<int> A = variables(20, width);
-    //vector<int> B = variables(size, width);
-    //for (int i : A) 
-        //std::cout << i << ", ";
-    //std::cout << "\nAnd B contains:\n";
-    //for (int i : B)
-        //std::cout << i << ", ";
-    //std::cout << "\nmerged:\n";
-    vector<int> C(A.size());
+    int size = 1000;
+    int width = 80;
+    vector<int> A = variables(size, width);
+    vector<int> B = variables(size, 2 * width);
+    vector<int> cpu(A.size() + B.size());
+    // for (int i : A) std::cout << i << "\n";
+    // std::cout << "\nAnd B contains:\n";
+    // for (int i : B) std::cout << i << "\n";
+    // std::cout << "\nmerged:\n";
+    vector<int> C(A.size() + B.size());
     Storage s_a(A);
-    //Storage s_b(B);
+    Storage s_b(B);
     Storage s_c(C);
-    copy_cuda(s_a.gpu_pointer_const(), A.size(), s_c.gpu_pointer());
-    //for (int i : s_c.return_data_const()) {
-        //std::cout << i << ", ";
+    cuda_merge(s_a.gpu_pointer(), A.size(), s_b.gpu_pointer(), B.size(),
+               s_c.gpu_pointer(), 8);
+    // for (int i : s_c.return_data_const()) {
+    // std::cout << i << "\n";
     //}
+    double begin = cpuSecond2();
+    std::merge(A.begin(), A.end(), B.begin(), B.end(), cpu.begin());
+    double end = cpuSecond2() - begin;
+    bool equal = std::equal(s_c.return_data_const().begin(),
+                            s_c.return_data_const().end(), cpu.begin());
+    std::cout << "the two are equal: " << equal << std::endl;
+    std::cout << "It took the CPU: " << end << std::endl;
 }
-
