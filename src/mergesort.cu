@@ -3,8 +3,6 @@
 #include "../include/common.h"
 #include "../include/merge.h"
 
-#include "../include/merge.h"
-
 double cpuSecond() {
     struct timeval tp;
     gettimeofday(&tp, NULL);
@@ -29,15 +27,11 @@ __device__ int mergepath(int* a, int size_a, int* b, int size_b, int diag) {
 }
 
 __device__ void merge(const int* a, int start_a, int sz_a, const int* b,
-                      int start_b, int sz_b, int* c, int start_c, int length,
-                      int* ranges) {
+                      int start_b, int sz_b, int* c, int start_c, int length) {
     int i = 0;
     int j = 0;
     int k = 0;
     int pos = threadIdx.x * length;
-    // printf("For threadix %i at blockDim %i the pos is %i\n",
-    // threadIdx.x, blockIdx.x, pos);
-    // int val;
     while (k < length && pos < sz_a + sz_b) {
         if (start_a + i == sz_a)
             c[start_c + k++] = b[start_b + j++];
@@ -47,8 +41,6 @@ __device__ void merge(const int* a, int start_a, int sz_a, const int* b,
             c[start_c + k++] = a[start_a + i++];
         else
             c[start_c + k++] = b[start_b + j++];
-        // printf("The value of position %i is %i for thread %i at block %i\n",
-        // start_c + k - 1, c[start_c + k - 1], threadIdx.x, blockIdx.x);
         pos++;
     }
 }
@@ -67,27 +59,6 @@ __device__ void loadtodevice(const int* a, int sz_a, const int* b, int sz_b,
     }
 }
 
-__device__ void devicetoglobal(const int* shared, int sz_a, int sz_b,
-                               const int* boundaries, int* c) {
-    int start_block_a = boundaries[blockIdx.x];
-    int end_block_a =
-        (gridDim.x - 1 > blockIdx.x) ? boundaries[blockIdx.x + 1] : sz_a;
-    int start_a = threadIdx.x;
-    while (start_block_a + start_a < end_block_a) {
-        c[start_a + start_block_a] = shared[start_a];
-        start_a += blockDim.x;
-    }
-    int start_block = boundaries[blockIdx.x + gridDim.x];
-    start_a = threadIdx.x;
-    int end_block = (gridDim.x - 1 > blockIdx.x)
-                        ? boundaries[blockIdx.x + gridDim.x + 1]
-                        : sz_b;
-    while (start_block + start_a < end_block) {
-        c[sz_a + start_a + start_block] =
-            shared[end_block_a - start_block_a + start_a];
-        start_a += blockDim.x;
-    }
-}
 __device__ void ranges(int* ranges, int sz_a, int sz_b, int* boundaries) {
     if (threadIdx.x == 0) {
         ranges[0] = boundaries[2 * blockIdx.x];
@@ -116,7 +87,7 @@ __global__ void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
         int b_start = diag - a_start;
         merge(shared, a_start, block_ranges[2], &shared[block_ranges[2]],
               b_start, block_ranges[3], c, diag + blockIdx.x * size_shared,
-              length, block_ranges);
+              length);
     }
 }
 
@@ -140,7 +111,6 @@ double cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C,
     dim3 blockDim(128);
     int size_shared = 1000;
     int n_blocks = ceilf((float)(sz_a + sz_b) / size_shared);
-    //printf("number of blocks %i and sz_b %i\n", n_blocks, sz_b);
     dim3 gridDim(n_blocks);
     int boundaries[2 * n_blocks + 2];
     int* d_boundaries;
@@ -150,11 +120,50 @@ double cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C,
     double beg = cpuSecond();
     determine_range<<<1, gridDim>>>(d_A, sz_a, d_B, sz_b, size_shared,
                                     d_boundaries);
-    // MY_CHECK(cudaDeviceSynchronize());
     paralleMerge<<<gridDim, blockDim, size_shared * sizeof(int)>>>(
         d_A, sz_a, d_B, sz_b, d_C, d_boundaries, 10, size_shared);
     MY_CHECK(cudaDeviceSynchronize());
     double end = cpuSecond() - beg;
-    //printf("The GPU took: %f\n", end);
+    return end;
+}
+
+__device__ void merge2(int* a, int start_a, int sz_a, int* b, int start_b,
+                       int sz_b, int* c, int start_c, int length) {
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    while (k < length) {
+        if (start_a + i == sz_a)
+            c[start_c + k++] = b[start_b + j++];
+        else if (start_b + j == sz_b)
+            c[start_c + k++] = a[start_a + i++];
+        else if (a[start_a + i] <= b[start_b + j])
+            c[start_c + k++] = a[start_a + i++];
+        else
+            c[start_c + k++] = b[start_b + j++];
+    }
+}
+
+__global__ void paralleMerge3(int* a, int sz_a, int* b, int sz_b, int* c,
+                              int length) {
+    //printf("inside the function with %i\n", threadIdx.x);
+    int diag = threadIdx.x * length;
+    int a_start = mergepath(a, sz_a, b, sz_b, diag);
+    int b_start = diag - a_start;
+    //printf("The start values for the thread %i are (%i, %i)\n", threadIdx.x,
+           //a_start, b_start);
+    merge2(a, a_start, sz_a, b, b_start, sz_b, c, diag, length);
+}
+
+double cuda_merge_global(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C,
+                         int length) {
+    int n_threads = ceilf((float)(sz_a + sz_b) / length);
+    //printf("The number of threads are %i\n", n_threads);
+    dim3 blockDim(n_threads);
+    dim3 gridDim(1);  // ten threads, likely bug is too many selected
+    double beg = cpuSecond();
+    paralleMerge3<<<gridDim, blockDim>>>(d_A, sz_a, d_B, sz_b, d_C, length);
+    MY_CHECK(cudaDeviceSynchronize());
+    double end = cpuSecond() - beg;
     return end;
 }

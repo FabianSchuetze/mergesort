@@ -31,26 +31,26 @@ std::vector<int> variables(int size, int width) {
 int main() {
     std::map<int, double> gpu_times;
     std::map<int, double> cpu_times;
-    std::vector<int> sizes = {100, 500, 1000, 5000, 10000, 20000, 50000};
+     std::vector<int> sizes = {500, 1000, 5000,10000, 20000, 50000};
+    //std::vector<int> sizes = {50000};
     for (int size : sizes) {
-        // int size = 50000;
         int width = 8000;
         vector<int> A = variables(size, width);
         vector<int> B = variables(size, 2 * width);
         vector<int> cpu(A.size() + B.size());
-        // for (int i : A) std::cout << i << "\n";
-        // std::cout << "\nAnd B contains:\n";
-        // for (int i : B) std::cout << i << "\n";
-        // std::cout << "\nmerged:\n";
+        //for (int i : A) std::cout << i << "\n";
+        //std::cout << "\nAnd B contains:\n";
+        //for (int i : B) std::cout << i << "\n";
+        //std::cout << "\nmerged:\n";
         vector<int> C(A.size() + B.size());
         Storage s_a(A);
         Storage s_b(B);
         Storage s_c(C);
         gpu_times[size] =
-            cuda_merge(s_a.gpu_pointer(), A.size(), s_b.gpu_pointer(), B.size(),
-                       s_c.gpu_pointer(), 8);
-        // for (int i : s_c.return_data_const()) {
-        // std::cout << i << "\n";
+            cuda_merge(s_a.gpu_pointer(), A.size(), s_b.gpu_pointer(),
+                              B.size(), s_c.gpu_pointer(), 100);
+        //for (int i : s_c.return_data_const()) {
+            //std::cout << i << "\n";
         //}
         double begin = cpuSecond2();
         std::merge(A.begin(), A.end(), B.begin(), B.end(), cpu.begin());
@@ -60,7 +60,8 @@ int main() {
                                 s_c.return_data_const().end(), cpu.begin());
         if (!equal) {
             std::cout << "for size " << size << "the results are not equal\n";
-            exit(1);
+            // return 1;
+            // exit(1);
         }
         // std::cout << "It took the CPU: " << end << std::endl;
     }
