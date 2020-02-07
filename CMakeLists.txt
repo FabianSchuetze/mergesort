@@ -7,7 +7,8 @@ set(LIBRARY_TARGET_NAME ${PROJECT_NAME})
 set(CUDA_HOST_COMPILER /usr/local/cuda-10.2/bin/nvcc)
 set(CMAKE_CUDA_FLAGS "-Xcompiler -rdynamic -lineinfo")
 enable_language(CUDA)
-ADD_LIBRARY(cuda_obj SHARED src/mergesort.cu)
+ADD_LIBRARY(cuda_obj SHARED src/mergesort.cu
+                            src/copy.cu)
 
 set(${LIBRARY_TARGET_NAME}_SRC
     src/merge.cpp
@@ -23,6 +24,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fPIC\
     -Wall -std=c++17 -Wno-error=unused-command-line-argument\
     -lcurand -L /usr/lib/cuda/lib64 -lcudart  -lcublas")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -01")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -03")
 
 add_subdirectory(examples)

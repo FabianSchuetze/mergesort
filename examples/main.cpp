@@ -28,8 +28,8 @@ std::vector<int> variables(int size, int width) {
 }
 
 int main() {
-    int size = 1000;
-    int width = 80;
+    int size = 50000;
+    int width = 8000;
     vector<int> A = variables(size, width);
     vector<int> B = variables(size, 2 * width);
     vector<int> cpu(A.size() + B.size());

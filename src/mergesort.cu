@@ -5,6 +5,11 @@
 
 #include "../include/merge.h"
 
+double cpuSecond() {
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return ((double)tp.tv_sec + (double)tp.tv_usec * 1e-6);
+}
 __device__ int mergepath(int* a, int size_a, int* b, int size_b, int diag) {
     if (diag == 0) return 0;
     int begin = max(0, diag - size_b);
@@ -30,8 +35,8 @@ __device__ void merge(const int* a, int start_a, int sz_a, const int* b,
     int j = 0;
     int k = 0;
     int pos = threadIdx.x*length;
-    printf("For threadix %i at blockDim %i the pos is %i\n",
-           threadIdx.x, blockIdx.x, pos); 
+    //printf("For threadix %i at blockDim %i the pos is %i\n",
+           //threadIdx.x, blockIdx.x, pos); 
     // int val;
     while (k < length && pos < sz_a + sz_b) {
         if (start_a + i == sz_a)
@@ -42,8 +47,8 @@ __device__ void merge(const int* a, int start_a, int sz_a, const int* b,
             c[start_c + k++] = a[start_a + i++];
         else
             c[start_c + k++] = b[start_b + j++];
-        printf("The value of position %i is %i for thread %i at block %i\n",
-               start_c + k - 1, c[start_c + k - 1], threadIdx.x, blockIdx.x);
+        //printf("The value of position %i is %i for thread %i at block %i\n",
+               //start_c + k - 1, c[start_c + k - 1], threadIdx.x, blockIdx.x);
         pos++;
     }
 }
@@ -131,8 +136,8 @@ __global__ void determine_range(int* a, int sz_a, int* b, int sz_b,
 }
 
 void cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C, int length) {
-    dim3 blockDim(10);
-    int size_shared = 9;
+    dim3 blockDim(128);
+    int size_shared = 500;
     int n_blocks = ceilf((float)(sz_a + sz_b) / size_shared);
     printf("number of blocks %i and sz_b %i\n", n_blocks, sz_b);
     dim3 gridDim(n_blocks);
@@ -141,10 +146,13 @@ void cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C, int length) {
     cudaMalloc((void**)&d_boundaries, 2 + 2 * n_blocks * sizeof(int));
     cudaMemcpy(d_boundaries, boundaries, 2 + 2 * n_blocks * sizeof(int),
                cudaMemcpyHostToDevice);
+    double beg = cpuSecond();
     determine_range<<<1, gridDim>>>(d_A, sz_a, d_B, sz_b, size_shared,
                                     d_boundaries);
-    MY_CHECK(cudaDeviceSynchronize());
+    //MY_CHECK(cudaDeviceSynchronize());
     paralleMerge<<<gridDim, blockDim, size_shared * sizeof(int)>>>(
         d_A, sz_a, d_B, sz_b, d_C, d_boundaries, 3, size_shared);
     MY_CHECK(cudaDeviceSynchronize());
+    double end = cpuSecond() - beg;
+    printf("The GPU took: %f\n", end);
 }
