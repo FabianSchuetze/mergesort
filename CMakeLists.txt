@@ -24,6 +24,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fPIC\
     -Wall -std=c++17 -Wno-error=unused-command-line-argument\
     -lcurand -L /usr/lib/cuda/lib64 -lcudart  -lcublas")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -03")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -O3")
 
 add_subdirectory(examples)

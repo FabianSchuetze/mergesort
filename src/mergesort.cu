@@ -34,9 +34,9 @@ __device__ void merge(const int* a, int start_a, int sz_a, const int* b,
     int i = 0;
     int j = 0;
     int k = 0;
-    int pos = threadIdx.x*length;
-    //printf("For threadix %i at blockDim %i the pos is %i\n",
-           //threadIdx.x, blockIdx.x, pos); 
+    int pos = threadIdx.x * length;
+    // printf("For threadix %i at blockDim %i the pos is %i\n",
+    // threadIdx.x, blockIdx.x, pos);
     // int val;
     while (k < length && pos < sz_a + sz_b) {
         if (start_a + i == sz_a)
@@ -47,8 +47,8 @@ __device__ void merge(const int* a, int start_a, int sz_a, const int* b,
             c[start_c + k++] = a[start_a + i++];
         else
             c[start_c + k++] = b[start_b + j++];
-        //printf("The value of position %i is %i for thread %i at block %i\n",
-               //start_c + k - 1, c[start_c + k - 1], threadIdx.x, blockIdx.x);
+        // printf("The value of position %i is %i for thread %i at block %i\n",
+        // start_c + k - 1, c[start_c + k - 1], threadIdx.x, blockIdx.x);
         pos++;
     }
 }
@@ -135,11 +135,12 @@ __global__ void determine_range(int* a, int sz_a, int* b, int sz_b,
     }
 }
 
-void cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C, int length) {
+double cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C,
+                  int length) {
     dim3 blockDim(128);
-    int size_shared = 500;
+    int size_shared = 1000;
     int n_blocks = ceilf((float)(sz_a + sz_b) / size_shared);
-    printf("number of blocks %i and sz_b %i\n", n_blocks, sz_b);
+    //printf("number of blocks %i and sz_b %i\n", n_blocks, sz_b);
     dim3 gridDim(n_blocks);
     int boundaries[2 * n_blocks + 2];
     int* d_boundaries;
@@ -149,10 +150,11 @@ void cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C, int length) {
     double beg = cpuSecond();
     determine_range<<<1, gridDim>>>(d_A, sz_a, d_B, sz_b, size_shared,
                                     d_boundaries);
-    //MY_CHECK(cudaDeviceSynchronize());
+    // MY_CHECK(cudaDeviceSynchronize());
     paralleMerge<<<gridDim, blockDim, size_shared * sizeof(int)>>>(
-        d_A, sz_a, d_B, sz_b, d_C, d_boundaries, 3, size_shared);
+        d_A, sz_a, d_B, sz_b, d_C, d_boundaries, 10, size_shared);
     MY_CHECK(cudaDeviceSynchronize());
     double end = cpuSecond() - beg;
-    printf("The GPU took: %f\n", end);
+    //printf("The GPU took: %f\n", end);
+    return end;
 }
