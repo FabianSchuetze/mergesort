@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <sys/time.h>
+#include <vector>
 #include "../include/common.h"
 #include "../include/merge.h"
+#include "../include/storage.h"
 
 double cpuSecond() {
     struct timeval tp;
@@ -57,6 +59,7 @@ __device__ void loadtodevice(const int* a, int sz_a, const int* b, int sz_b,
         shared[boundaries[2] + tid] = b[tid + boundaries[1]];
         tid += blockDim.x;
     }
+    __syncthreads();
 }
 
 __device__ void ranges(int* ranges, int sz_a, int sz_b, int* boundaries) {
@@ -67,6 +70,7 @@ __device__ void ranges(int* ranges, int sz_a, int sz_b, int* boundaries) {
         ranges[2] = boundaries[pos] - ranges[0];
         ranges[3] = boundaries[pos + 1] - ranges[1];
     }
+    __syncthreads();
 }
 
 __global__ void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
@@ -75,11 +79,9 @@ __global__ void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
     extern __shared__ int shared[];
     __shared__ int block_ranges[4];
     ranges(block_ranges, sz_a, sz_b, boundaries);
-    __syncthreads();
     loadtodevice(a, sz_a, b, sz_b, block_ranges, shared);
-    __syncthreads();
-    int process = threadIdx.x;
-    int diag = process * length;
+    //int process = threadIdx.x;
+    int diag = threadIdx.x * length;
     if (diag < block_ranges[2] + block_ranges[3]) {
         int a_start =
             mergepath(shared, block_ranges[2], &shared[block_ranges[2]],
@@ -106,22 +108,24 @@ __global__ void determine_range(int* a, int sz_a, int* b, int sz_b,
     }
 }
 
-double cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C,
-                  int length) {
+double cuda_merge(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C) {
     dim3 blockDim(128);
     int size_shared = 1000;
+    int length = 10;
     int n_blocks = ceilf((float)(sz_a + sz_b) / size_shared);
     dim3 gridDim(n_blocks);
-    int boundaries[2 * n_blocks + 2];
-    int* d_boundaries;
-    cudaMalloc((void**)&d_boundaries, 2 + 2 * n_blocks * sizeof(int));
-    cudaMemcpy(d_boundaries, boundaries, 2 + 2 * n_blocks * sizeof(int),
-               cudaMemcpyHostToDevice);
+    std::vector<int> boundaries(2 * n_blocks + 2);
+    Storage d_boundaries(boundaries);
+    // int* d_boundaries;
+    // cudaMalloc((void**)&d_boundaries, 2 + 2 * n_blocks * sizeof(int));
+    // cudaMemcpy(d_boundaries, boundaries, 2 + 2 * n_blocks * sizeof(int),
+    // cudaMemcpyHostToDevice);
     double beg = cpuSecond();
     determine_range<<<1, gridDim>>>(d_A, sz_a, d_B, sz_b, size_shared,
-                                    d_boundaries);
+                                    d_boundaries.gpu_pointer());
     paralleMerge<<<gridDim, blockDim, size_shared * sizeof(int)>>>(
-        d_A, sz_a, d_B, sz_b, d_C, d_boundaries, 10, size_shared);
+        d_A, sz_a, d_B, sz_b, d_C, d_boundaries.gpu_pointer(), length,
+        size_shared);
     MY_CHECK(cudaDeviceSynchronize());
     double end = cpuSecond() - beg;
     return end;
@@ -155,7 +159,7 @@ __global__ void paralleMerge3(int* a, int sz_a, int* b, int sz_b, int* c,
 double cuda_merge_global(int* d_A, int sz_a, int* d_B, int sz_b, int* d_C,
                          int length) {
     int n_threads = ceilf((float)(sz_a + sz_b) / length);
-    //printf("The number of threads are %i\n", n_threads);
+    // printf("The number of threads are %i\n", n_threads);
     dim3 blockDim(n_threads);
     dim3 gridDim(1);  // ten threads, likely bug is too many selected
     double beg = cpuSecond();

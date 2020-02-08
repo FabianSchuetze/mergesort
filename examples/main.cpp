@@ -48,7 +48,7 @@ int main() {
         Storage s_c(C);
         gpu_times[size] =
             cuda_merge(s_a.gpu_pointer(), A.size(), s_b.gpu_pointer(),
-                              B.size(), s_c.gpu_pointer(), 100);
+                              B.size(), s_c.gpu_pointer());
         //for (int i : s_c.return_data_const()) {
             //std::cout << i << "\n";
         //}
