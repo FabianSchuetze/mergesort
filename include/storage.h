@@ -7,16 +7,10 @@ class Storage {
    public:
     explicit Storage();
     explicit Storage(const std::vector<int>&);
-    // Storage(const Storage&) = delete;
     Storage& operator=(Storage other) = delete;
-    // Storage(const Eigen::MatrixXd&&) // I need to provide that!
     ~Storage();
     const dtype* cpu_pointer_const();
     const dtype* gpu_pointer_const();
-    //void update_cpu_data(const dtype);
-    //void update_gpu_data(const dtype);
-    //void update_gpu_data(const dtype*);
-    //void update_gpu_data(const dtype*, const unsigned int, const unsigned int);
     dtype* cpu_pointer();
     dtype* gpu_pointer();
     int size() {return _data.size();}
