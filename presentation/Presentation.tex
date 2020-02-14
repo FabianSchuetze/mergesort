@@ -135,10 +135,7 @@
 
 \begin{frame}[fragile]
 \frametitle{Memory Management}
-%\caption{Hello, world}
 \begin{lstlisting}[language=c++]
-\bein{overlayarea}
-\only<0>{
 typedef int dtype;
 class Storage {
    public:
@@ -150,8 +147,16 @@ class Storage {
     dtype* _gpu_pointer;
     void initialize_gpu_memory();
 };
-}
-\only<1>{
+\end{lstlisting}
+\begin{itemize}
+    \item Memory pool, takes ownership
+    \item Initializes the gpu memory as copy
+    \item two differetn pointer, to cpu/gpu locations
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{lstlisting}[language=c++]
 typedef int dtype;
 class Storage {
    public:
@@ -170,13 +175,44 @@ class Storage {
     void sync_to_cpu();
     void sync_to_gpu();
 };
-}
-# include <iostream>
-
-int main()
-{
-   std::cout << "Hello, world!\n"; //Important code line!
-}
 \end{lstlisting}
+\begin{itemize}
+    \item accesses pointers
+    \item $_recent_head$ specifies on which device memory changed last
+    \item if non-const pointer, expects modificaion, and, change head
+    \item access pointer out-of-sync, sync to location
+\end{itemize}
+\end{frame}
+
+\section{Merge}
+\begin{frame}
+    Write about CPU merge
+\end{frame}
+
+\begin{frame}
+    \frametitle{How to spwan to many threads?}
+Paper that does that, show as example, the cutting approach
+Naiv approach : 2 Threads Cut both a and b into half, 
+\begin{align*}
+    A &= \begin{matrix} 0 0 0 0 \end{matrix}
+    B &= \begin{matrix} 1 1 1 1 \end{matrix}
+    C &= \begin{matrix} ? ? ? ? ? ? ? ? \end{matrix}
+\end{align*}
+\begin{align*}
+    A &= \begin{matrix} \underbrace{0 0}_{\text{Thread 1}} | 
+                        \underbrace{0 0}_{\text{Thread 2}} \end{matrix}
+    B &= \begin{matrix} \underbrace{1 1}_{\text{Thread 1}} | 
+                        \underbrace{1 1}_{\text{Thread 2}} \end{matrix}
+    C &= \begin{matrix} \underbrace{? ? ? ?}_{\text{Thread 1}} | 
+    \underbrace{? ? ? ?}_{\text{Thread 2}} \end{matrix}
+\end{align*}
+    \begin{align*}
+    C &= \begin{matrix} \underbrace{0 0 1 1}_{\text{Thread 1}} | 
+    \underbrace{0 0 1 1}_{\text{Thread 2}} \end{matrix}
+\end{align*}
+\end{frame}
+
+\begin{frame}
+    \frametitle{How to allocated work?}
 \end{frame}
 \end{document}
