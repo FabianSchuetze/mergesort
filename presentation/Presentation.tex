@@ -96,14 +96,15 @@
 %\setbeamertemplate{footline}[frame number]{}
 
 
-\usepackage[pygopt={texcomments=true,style=emacs}]{pythontex}
-\setpythontexlistingenv{listing}
+\usepackage{listings}
+%\usepackage[pygopt={texcomments=true,style=emacs}]{pythontex}
+%\setpythontexlistingenv{listing}
 
-\newcounter{sublisting}[listing]
-\newcommand{\codeline}[1]{%
-  \addcontentsline{lopytx}{listing}%
-    {\protect\numberline{\hspace{0.5in}\thelisting.\arabic{FancyVerbLine}}\hspace{0.5in}#1}%
-}
+%\newcounter{sublisting}[listing]
+%\newcommand{\codeline}[1]{%
+  %\addcontentsline{lopytx}{listing}%
+    %{\protect\numberline{\hspace{0.5in}\thelisting.\arabic{FancyVerbLine}}\hspace{0.5in}#1}%
+%}
 
 
  %----------------------------------------------------------------------------------------
@@ -134,17 +135,16 @@
 
 \begin{frame}[fragile]
 \frametitle{Memory Management}
-%\begin{listing}
 %\caption{Hello, world}
-\begin{pygments}[numbers=left]{c++}
+\begin{lstlisting}[language=c++]
+%\begin{pygments}[numbers=left]{c++}
 # include <iostream>
 
 int main()
 {
    std::cout << "Hello, world!\n"; //\codeline{Important code line!}
 }
-\end{pygments}
-%\end{listing}
-
+\end{lstlisting}
+%\end{pygments}
 \end{frame}
 \end{document}
