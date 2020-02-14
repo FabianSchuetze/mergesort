@@ -1,0 +1,267 @@
+\documentclass[xcolor=table]{beamer}
+\usepackage{lmodern}
+%\usepackage[normalem]{ulem}
+\usepackage{ marvosym }
+\usepackage[export]{adjustbox}
+\usepackage{mathtools,calc}
+\newcommand\Fontvi{\fontsize{22}{23.2}\selectfont}
+\newcommand\strikeout[2][]{%
+ \begin{tabular}[b]{@{}c@{}}
+    \makebox(0,0)[cb]{\textcolor{blue}{#1}} \\[-0.2\normalbaselineskip]
+     \rlap{\color{red}\rule[0.5ex]{\widthof{#2}}{0.5pt}}#2
+ \end{tabular}}
+
+\newcommand<>\mathalt[2]{%
+  \alt#3{\mathmakebox[\widthof{$#2$}]{#1}}{#2}%
+}
+\usepackage{colortbl}
+\usepackage{booktabs}
+%\usepackage{xcolor}
+%\usepackage[usenames, dvipsnames]{color}
+\definecolor{red}{rgb}{0.894, 0.101, 0.109} 
+\definecolor{Gray}{gray}{0.85}
+\newcolumntype{a}{>{\columncolor{Gray}}c}
+\definecolor{green}{rgb}{0.1054, 0.6171, 0.4648}
+\definecolor{orange}{rgb}{0.8476, 0.3711, 0.0078}
+\definecolor{violet}{rgb}{0.9023, 0.1602, 0.5391}
+%\usepackage[doi=false, backref=true, url=false, isbn=false, backend=biber,
+						%citestyle=authoryear]{biblatex}
+\usepackage{tabu}
+\newcommand{\blue}{\textcolor{blue}}
+\newcommand{\red}{\textcolor{red}}
+\newcommand{\green}{\textcolor{green}}
+\newcommand{\organge}{\textcolor{orange}}
+\newcommand{\violet}{\textcolor{violet}}
+% Just for demo
+
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par%
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
+\usepackage{mathtools}
+\newtheorem{prop}{Proposition}
+\newtheorem{hypothesis}{Hypothesis}
+\usepackage{amsmath}
+\usepackage{multirow}
+\usepackage{makecell} % to make linebreaks in table
+\renewcommand\theadalign{bc}
+\renewcommand\theadfont{\bfseries}
+\renewcommand\theadgape{\Gape[4pt]}
+\renewcommand\cellgape{\Gape[4pt]}
+\usepackage{hhline}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage[]{hyperref}%
+\hypersetup{colorlinks, linkcolor={blue}, citecolor={blue}, urlcolor={red}}
+\usepackage{graphicx}
+
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+\DeclareMathOperator{\E}{\mathbb{E}}
+%\addbibresource[]{library.bib}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\setbeamertemplate{caption}{\raggedright\insertcaption\par}
+\usetheme{default}
+\usepackage[flushleft]{threeparttable}
+\usepackage{booktabs,caption,fixltx2e}
+\usepackage{ragged2e}
+\usepackage{appendixnumberbeamer}
+\makeatletter
+\usefonttheme{professionalfonts}
+\usefonttheme{serif}
+\setbeamertemplate{navigation symbols}{}%remove navigation symbols
+\setbeamertemplate{footline}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertsection\
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertsubsection\
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    %\usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em} % hide %date
+    %\insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+\makeatother
+%\setbeamertemplate{footline}[frame number]{}
+
+
+\usepackage{listings}
+\lstset{
+    tabsize=4,
+    showstringspaces=false,
+    numbers=left,
+    commentstyle=\color{green},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red}
+}
+
+
+ %----------------------------------------------------------------------------------------
+% %	TITLE PAGE
+% %----------------------------------------------------------------------------------------
+\renewcommand*{\thefootnote}{\fnsymbol{footnote}}
+\title[]{Ideas for Low Celluclast Performance}
+\date{13.11.2019} % Date, can be changed to a custom date
+%\author{Fabian Schuetze, EUI}
+\addtobeamertemplate{block begin}{}{\justifying}  %new code
+\setbeamertemplate{itemize items}[circle]
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\section{Basic Architecture}
+
+\begin{frame}
+\begin{itemize}
+    \item  Accesses different memory than CPU
+    \item Starting thousands of threads at low costs
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Memory Management}
+\begin{lstlisting}[language=c++]
+typedef int dtype;
+class Storage {
+   public:
+    explicit Storage(const std::vector<int>&);
+
+   private:
+    std::vector<int> _data;
+    dtype* _cpu_pointer;
+    dtype* _gpu_pointer;
+    void initialize_gpu_memory();
+};
+\end{lstlisting}
+\begin{itemize}
+    \item Memory pool, takes ownership
+    \item Initializes the gpu memory as copy
+    \item two differetn pointer, to cpu/gpu locations
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{lstlisting}[language=c++]
+typedef int dtype;
+class Storage {
+   public:
+    explicit Storage(const std::vector<int>&);
+    const dtype* cpu_pointer_const();
+    const dtype* gpu_pointer_const();
+    dtype* cpu_pointer();
+    dtype* gpu_pointer();
+
+   private:
+    std::vector<int> _data;
+    dtype* _cpu_pointer;
+    dtype* _gpu_pointer;
+    void initialize_gpu_memory();
+    std::string recent_head;
+    void sync_to_cpu();
+    void sync_to_gpu();
+};
+\end{lstlisting}
+\begin{itemize}
+    \item accesses pointers
+    \item $_recent_head$ specifies on which device memory changed last
+    \item if non-const pointer, expects modificaion, and, change head
+    \item access pointer out-of-sync, sync to location
+\end{itemize}
+\end{frame}
+
+\section{Merge}
+\begin{frame}
+    Write about CPU merge
+\end{frame}
+
+\begin{frame}
+    \frametitle{How to spwan to many threads?}
+Paper that does that, show as example, the cutting approach
+Naiv approach : 2 Threads Cut both a and b into half, 
+\begin{align*}
+    A &= \begin{matrix} 0 0 0 0 \end{matrix}
+    B &= \begin{matrix} 1 1 1 1 \end{matrix}
+    C &= \begin{matrix} ? ? ? ? ? ? ? ? \end{matrix}
+\end{align*}
+\begin{align*}
+    A &= \begin{matrix} \underbrace{0 0}_{\text{Thread 1}} | 
+                        \underbrace{0 0}_{\text{Thread 2}} \end{matrix}
+    B &= \begin{matrix} \underbrace{1 1}_{\text{Thread 1}} | 
+                        \underbrace{1 1}_{\text{Thread 2}} \end{matrix}
+    C &= \begin{matrix} \underbrace{? ? ? ?}_{\text{Thread 1}} | 
+    \underbrace{? ? ? ?}_{\text{Thread 2}} \end{matrix}
+\end{align*}
+    \begin{align*}
+    C &= \begin{matrix} \underbrace{0 0 1 1}_{\text{Thread 1}} | 
+    \underbrace{0 0 1 1}_{\text{Thread 2}} \end{matrix}
+\end{align*}
+\end{frame}
+
+\begin{frame}
+    \frametitle{How to allocated work?}
+    Here are the mergepath pictures
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Comutation Procedure}
+\begin{lstlisting}[language=c++]
+__global__ void paralleMerge3(int* a, int sz_a, int* b, int sz_b, int* c,
+                              int length) {
+    int diag = threadIdx.x * length;
+    int a_start = mergepath(a, sz_a, b, sz_b, diag);
+    int b_start = diag - a_start;
+    merge2(a, a_start, sz_a, b, b_start, sz_b, c, diag, length);
+}
+\end{lstlisting}
+\begin{itemize}
+    \item Each tread works on one part
+    \item Thread calculates the value $A_lower$ for itself
+    \item Calcultes the also the $B_lower$ (Why does that work again?)
+    \item merges the two arrays
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Problem: Slow as a Snail}
+show the growth rates vs std::mergesort
+\end{frame}
+
+\begin{frame}
+\frametitle{Reason: So much global meory access}
+50 Percent of the global memory traffic is caused by 3 Percent of the values\\
+Corrobation: Cuda performance tool
+\end{frame}
+
+\section{Memory Hirachy of CUDA}
+\begin{frame}
+\frametitle{The different memories and their sizes}
+show the plot of the different memories and their relative size on my card
+\end{frame}
+
+\section{Merging with local memory}
+\begin{frame}
+\frametitle{Describe the shared memory}
+show the plot of the different memories and their relative size on my card
+\end{frame}
+
+\begin{frame}
+\frametitle{Show the results}
+show the plot of the different memories and their relative size on my card
+\end{frame}
+\end{document}
