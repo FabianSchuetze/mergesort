@@ -214,5 +214,54 @@ Naiv approach : 2 Threads Cut both a and b into half,
 
 \begin{frame}
     \frametitle{How to allocated work?}
+    Here are the mergepath pictures
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Comutation Procedure}
+\begin{lstlisting}[language=c++]
+__global__ void paralleMerge3(int* a, int sz_a, int* b, int sz_b, int* c,
+                              int length) {
+    int diag = threadIdx.x * length;
+    int a_start = mergepath(a, sz_a, b, sz_b, diag);
+    int b_start = diag - a_start;
+    merge2(a, a_start, sz_a, b, b_start, sz_b, c, diag, length);
+}
+\end{lstlisting}
+\begin{itemize}
+    \item Each tread works on one part
+    \item Thread calculates the value $A_lower$ for itself
+    \item Calcultes the also the $B_lower$ (Why does that work again?)
+    \item merges the two arrays
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Problem: Slow as a Snail}
+show the growth rates vs std::mergesort
+\end{frame}
+
+\begin{frame}
+\frametitle{Reason: So much global meory access}
+50 Percent of the global memory traffic is caused by 3 Percent of the values\\
+Corrobation: Cuda performance tool
+\end{frame}
+
+\section{Memory Hirachy of CUDA}
+\begin{frame}
+\frametitle{The different memories and their sizes}
+show the plot of the different memories and their relative size on my card
+\end{frame}
+
+\section{Merging with local memory}
+\begin{frame}
+\frametitle{Describe the shared memory}
+show the plot of the different memories and their relative size on my card
+\end{frame}
+
+\begin{frame}
+\frametitle{Show the results}
+show the plot of the different memories and their relative size on my card
 \end{frame}
 \end{document}
