@@ -410,13 +410,28 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b, int* c, int length) {
 
 \begin{frame}
 \frametitle{Problem: Slow as a Snail}
-show the growth rates vs std::mergesort
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.17]{global_memory_merge.png}
+\end{figure}
 \end{frame}
 
 \begin{frame}
 \frametitle{Reason: So much global meory access}
-50 Percent of the global memory traffic is caused by 3 Percent of the values\\
-Corrobation: Cuda performance tool
+\begin{overlayarea}{\textwidth}{5.0cm}
+\only<1>{
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.17]{memory_access_pattern_1.png}
+\end{figure}
+}
+\only<2>{
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.17]{memory_access_pattern_3.png}
+\end{figure}
+}
+\end{overlayarea}
 \end{frame}
 
 \section{Memory Hirachy of CUDA}
@@ -433,6 +448,9 @@ show the plot of the different memories and their relative size on my card
 
 \begin{frame}
 \frametitle{Show the results}
-show the plot of the different memories and their relative size on my card
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.17]{shared_memory_merge.png}
+\end{figure}
 \end{frame}
 \end{document}
