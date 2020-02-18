@@ -14,6 +14,14 @@
 \newcommand<>\mathalt[2]{%
   \alt#3{\mathmakebox[\widthof{$#2$}]{#1}}{#2}%
 }
+\newcommand{\underbracedmatrix}[2]{%
+  \left(\;
+  \smash[b]{\underbrace{
+    \begin{matrix}#1\end{matrix}
+  }_{#2}}
+  \;\right)
+  \vphantom{\underbrace{\begin{matrix}#1\end{matrix}}_{#2}}
+}
 \usepackage{colortbl}
 \usepackage{minted}
 \usepackage{booktabs}
@@ -289,12 +297,11 @@ add_kernel(float* A, float* B, float* C, int n) {
 \section{Merge}
 
 \begin{frame}[fragile]
-    \frametitle{Basic Merge Operation}
+\frametitle{Basic Merge Operation}
 \begin{align*}
-    A &= \begin{matrix} 5 & 7 & 8& & &  9&  12&  14&  15&  16 \end{matrix} \\
+    A &= \begin{matrix} 5 & 7 & 8& &  9&  12&  14&  15&  16 \end{matrix} \\
     B &= \begin{matrix} 1&  2&  3&  4&  6&  10&  11&  13 \end{matrix} \\
-    C &= \begin{matrix} ?&  ?&  ?&  ?&  ?&  ?&  ?&  ?&  ?&  ?&  ?&  ?&
-            ?& ?& ?& ? \end{matrix}
+        C &= \begin{matrix} ?&  ?&  ?&  ?&  ?&  ?&  ?& \ldots & ? \end{matrix}
 \end{align*}
 \begin{minted}[linenos=true]{c++}
 void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
@@ -326,23 +333,25 @@ void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
 \end{align*}
 }
 \only<2->{
-\green{Naive:} 2 Threads, half A and B \\
-\begin{align*}
-    A &= \begin{matrix} \underbrace{0 & 0}_{\text{Thread 1}} | 
-    \underbrace{0 & 0}_{\text{Thread 2}} \end{matrix} \\
-    B &= \begin{matrix} \underbrace{1 & 1}_{\text{Thread 1}} | 
-    \underbrace{1 & 1}_{\text{Thread 2}} \end{matrix} \\
-    C &= \begin{matrix} \underbrace{? &?& ?& ?}_{\text{Thread 1}} | 
-    \underbrace{?& ?& ?& ?}_{\text{Thread 2}} \end{matrix}
-\end{align*}
+\green{Naive:} 2 Threads, half A and B
+%\begin{align*}
+    %A &=  \smash[b]{\block{Thread 1}} & \smash[b]{\block{Thread
+    %2}}  \\
+    %B &= 2
+    %B &= \begin{matrix} \underbrace{1 & 1}_{\text{Thread 1}} | 
+    %\underbrace{1 & 1}_{\text{Thread 2}} \end{matrix} \\
+    %C &= \begin{matrix} \underbrace{? &?& ?& ?}_{\text{Thread 1}} | 
+    %\underbrace{?& ?& ?& ?}_{\text{Thread 2}} \end{matrix}
+%\end{align*}
 }
 \only<3->{
 \green{Result:}
-\begin{align*}
-    C &= \begin{matrix} \underbrace{0& 0& 1& 1}_{\text{Thread 1}} | 
-    \underbrace{0& 0& 1& 1}_{\text{Thread 2}} \end{matrix}
-\end{align*}
+%\begin{align*}
+    %C &= \begin{matrix} \underbrace{0& 0& 1& 1}_{\text{Thread 1}} | 
+    %\underbrace{0& 0& 1& 1}_{\text{Thread 2}} \end{matrix}
+%\end{align*}
 }
+\end{overlayarea}
 \end{frame}
 
 \begin{frame}
@@ -451,7 +460,6 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \end{itemize}
 \end{frame}
 
-
 \begin{frame}
 \frametitle{Problem: Slow as a Snail}
 \begin{figure}[ht]
@@ -487,9 +495,9 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \end{figure}
 \red{Visibility:}
 \begin{itemize}
-    \item \green{Global Memory:} Accessed by all threads\\
-    \item \green{Shared Memory:} Private for Block\\
-    \itme \green{Registers:} Private for Thread\\
+    \item \green{Global Memory:} Accessed by all threads
+    \item \green{Shared Memory:} Private for Block
+    \item \green{Registers:} Private for Thread
 \end{itemize}
 \red{Size:}
 \begin{itemize}
@@ -506,26 +514,37 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \section{Merging with local memory}
 \begin{frame}
 \frametitle{General Idea}
-\red{Problem:} Block shared memory:  48 Kb -> need to make blocks small enough
+\red{Problem:} Block shared memory:  48 Kb -> need to make blocks small enough\\
 \red{Solution:}
-\begin{enumerate}
+\begin{itemize}
     \item Determine large but small enough chuncks of arrays to load into blocks
     \item Load into shared memeory
     \item Each thread determines its range (as before), from shared memory
     \item Each thread merges subset (as before)
-\end{enumerate}
+\end{itemize}
 \end{frame}
 
-\begin{frame}
-\begin{minted}[lineos=true]{cuda}
-__global__ void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
-                             int* c, int* boundaries, int length,
-                             int size_shared) {
+\begin{frame}[fragile]
+%\begin{minted}[linenos=true]{cuda}
+%__global__ 
+%void paralleMerge(int* a, int sz_a, int* b, int sz_b, 
+                  %int* c, int length)
+%{
+    %int diag = threadIdx.x * length;
+    %int a_start = mergepath(a, sz_a, b, sz_b, diag);
+    %int b_start = diag - a_start;
+    %merge(a, a_start, sz_a, b, b_start, sz_b, c, diag, length);
+%}
+%\end{minted}
+\begin{minted}[linenos=true]{cuda}
+__global__ 
+void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
+                 int* c, int* boundaries, int length,
+                 int size_shared) {
     extern __shared__ int shared[];
     __shared__ int block_ranges[4];
     ranges(block_ranges, sz_a, sz_b, boundaries);
     loadtodevice(a, sz_a, b, sz_b, block_ranges, shared);
-    //int process = threadIdx.x;
     int diag = threadIdx.x * length;
     if (diag < block_ranges[2] + block_ranges[3]) {
         int a_start =
