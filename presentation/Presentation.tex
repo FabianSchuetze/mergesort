@@ -352,55 +352,66 @@ NEED TO CITE PAPER!
 \only<1>{
    \begin{figure}[ht]
        \centering
-       \textbf{How to split two arrays in equal chuncks}
+       \textbf{How to split two arrays in equal chuncks?}
        \includegraphics[scale=0.17]{initial.png}
     \end{figure}
  }
 \only<2>{
    \begin{figure}[ht]
    \centering
+       \textbf{One feasible split: Array A to Thread 1, Array B to Thread 2}
    \includegraphics[scale=0.17]{feasible_1.png}
     \end{figure}
  }
 \only<3>{
    \begin{figure}[ht]
    \centering
+   \textbf{Another feasible split: Array B to Thread 1, Array A to Thread 2}
    \includegraphics[scale=0.17]{feasible_2.png}
     \end{figure}
  }
 \only<4>{
    \begin{figure}[ht]
    \centering
+   \textbf{Another split (seen before): Thread 1 gets half of A and B}
    \includegraphics[scale=0.17]{feasible_3.png}
     \end{figure}
+    \red{Summary:} All allocations along vertical line split work equally!
  }
 \only<5>{
    \begin{figure}[ht]
    \centering
+   \textbf{Mergepath: Define the optimal split: One Elemet of B}
    \includegraphics[scale=0.17]{mergepath_1.png}
     \end{figure}
+    \red{Summary:} All allocations along vertical line split work equally!
+    \green{Mergpath:} Vertical move: pick array B; horizontal move: Array
  }
 \only<6>{
    \begin{figure}[ht]
    \centering
+   \textbf{Mergepath: Define the optimal split: Another Elemet of B}
    \includegraphics[scale=0.17]{mergepath_2.png}
     \end{figure}
  }
 \only<7>{
    \begin{figure}[ht]
    \centering
+   \textbf{Mergepath: Define the optimal split: Another Elemet of B}
    \includegraphics[scale=0.17]{mergepath_3.png}
     \end{figure}
  }
 \only<8>{
    \begin{figure}[ht]
    \centering
+   \textbf{Mergepath: Define the optimal split: Another Elemet of B}
    \includegraphics[scale=0.17]{mergepath_4.png}
     \end{figure}
  }
 \only<9>{
    \begin{figure}[ht]
    \centering
+   \textbf{Mergepath: Define the optimal split: Pick first elment of A}
    \includegraphics[scale=0.17]{mergepath_5.png}
     \end{figure}
  }
@@ -420,7 +431,7 @@ NEED TO CITE PAPER!
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Comutation Procedure}
+\frametitle{Computation Procedure}
 \begin{minted}[linenos=true]{cuda}
 __global__ 
 void paralleMerge(int* a, int sz_a, int* b, int sz_b, 
@@ -434,9 +445,9 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \end{minted}
 \begin{itemize}
     \item Each tread works on one part
-    \item Thread calculates the value $A_lower$ for itself
-    \item Calcultes the also the $B_lower$ (Why does that work again?)
-    \item merges the two arrays
+    \item Thread calculates \mintinline{c++}{$A_lower$} \mintinline{c++}{mergepath}
+    \item Obtain \mintinline{c++}{B_lower} as difference
+    \item merges two sub-arrays
 \end{itemize}
 \end{frame}
 
@@ -445,7 +456,7 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \frametitle{Problem: Slow as a Snail}
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.17]{global_memory_merge.png}
+\includegraphics[scale=0.25]{global_memory_merge.png}
 \end{figure}
 \end{frame}
 
@@ -455,13 +466,13 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \only<1>{
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.17]{memory_access_pattern_1.png}
+\includegraphics[scale=0.25]{memory_access_pattern_1.png}
 \end{figure}
 }
 \only<2>{
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.17]{memory_access_pattern_3.png}
+\includegraphics[scale=0.25]{memory_access_pattern_3.png}
 \end{figure}
 }
 \end{overlayarea}
@@ -472,31 +483,68 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \frametitle{The different memories and their sizes}
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.17]{memory_hirachy.png}
+\includegraphics[scale=0.22]{memory_hirachy.png}
 \end{figure}
-\red{Visibility:\\}
-\green{Global Memory:} Can be accessed by all threads\\
-\green{Shared Memory:} Private for each Block\\
-\green{Registers:} Private for each Thread\\
-\red{Size:\\}
-\green{Global Memory:} 2 GB
-\green{Shared Memory:} Total: 192 KB, per block: 48 KB
-\red{Latency:\\}
-\green{Global Memory:} 8 GB/s
-\green{Shared Memory:} 80 GB/s
+\red{Visibility:}
+\begin{itemize}
+    \item \green{Global Memory:} Accessed by all threads\\
+    \item \green{Shared Memory:} Private for Block\\
+    \itme \green{Registers:} Private for Thread\\
+\end{itemize}
+\red{Size:}
+\begin{itemize}
+    \item \green{Global Memory:} 2 GB
+    \item \green{Shared Memory:} Total: 192 KB, per block: 48 KB
+\end{itemize}
+\red{Latency:}
+\begin{itemize}
+    \item \green{Global Memory:} 8 GB/s
+    \item \green{Shared Memory:} 80 GB/s
+\end{itemize}
 \end{frame}
 
 \section{Merging with local memory}
 \begin{frame}
-\frametitle{Describe the shared memory}
-show the plot of the different memories and their relative size on my card
+\frametitle{General Idea}
+\red{Problem:} Block shared memory:  48 Kb -> need to make blocks small enough
+\red{Solution:}
+\begin{enumerate}
+    \item Determine large but small enough chuncks of arrays to load into blocks
+    \item Load into shared memeory
+    \item Each thread determines its range (as before), from shared memory
+    \item Each thread merges subset (as before)
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\begin{minted}[lineos=true]{cuda}
+__global__ void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
+                             int* c, int* boundaries, int length,
+                             int size_shared) {
+    extern __shared__ int shared[];
+    __shared__ int block_ranges[4];
+    ranges(block_ranges, sz_a, sz_b, boundaries);
+    loadtodevice(a, sz_a, b, sz_b, block_ranges, shared);
+    //int process = threadIdx.x;
+    int diag = threadIdx.x * length;
+    if (diag < block_ranges[2] + block_ranges[3]) {
+        int a_start =
+            mergepath(shared, block_ranges[2], &shared[block_ranges[2]],
+                      block_ranges[3], diag);
+        int b_start = diag - a_start;
+        merge(shared, a_start, block_ranges[2], &shared[block_ranges[2]],
+              b_start, block_ranges[3], c, diag + blockIdx.x * size_shared,
+              length);
+    }
+}
+\end{minted}
 \end{frame}
 
 \begin{frame}
 \frametitle{Show the results}
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.17]{shared_memory_merge.png}
+\includegraphics[scale=0.22]{shared_memory_merge.png}
 \end{figure}
 \end{frame}
 \end{document}
