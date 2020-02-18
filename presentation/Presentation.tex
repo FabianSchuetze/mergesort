@@ -15,6 +15,7 @@
   \alt#3{\mathmakebox[\widthof{$#2$}]{#1}}{#2}%
 }
 \usepackage{colortbl}
+\usepackage{minted}
 \usepackage{booktabs}
 %\usepackage{xcolor}
 %\usepackage[usenames, dvipsnames]{color}
@@ -129,49 +130,33 @@
 \titlepage
 \end{frame}
 
-\section{Basic Architecture}
-
 \begin{frame}
-    \frametitle{Big Ideas}
-    SMID, No fancy stuff, Latency Hiding. Can I show that?
+\tableofcontents
 \end{frame}
+
+\section{Architecture}
 
 \begin{frame}[fragile]
 \frametitle{GPU and CPU uses different memories}
-\green{Basic Architecture:}
-\begin{tikzpicture}[
-node distance = 0mm and 12mm,% for distance between nodes
-   box/.style = {draw, very thick, minimum width=5em},
-      arrow/.style = {thick,-stealth}
-                        ]
-\node (n1) [box] {\begin{tabular}{ll}% text in nodes write as table
-                  \multicolumn{2}{l}{CPU}   \\
-                  &CPU Memory (32 GB)
-                 \end{tabular}};
-\node (n2) [box, below right=of n1.north east]
-                {\begin{tabular}{ll}
-                  \multicolumn{2}{l}{GPU}   \\
-                    &GPU Memory (2 GB)
-                 \end{tabular}};
-\draw [arrow] (n1) --node [midway,above ] {slow} (n2);
-\draw [arrow] (n2) -- (n1);
-\end{tikzpicture}
-\green{Memory Creation:}
-\begin{lstlisting}[language=c++]
-T* gpu_pointer;
-unsigned int nBytes = 10*sizeof(int);
-cudaMalloc((void**)&_gpu_pointer, nBytes);
-\end{lstlisting}
+\begin{figure}[ht]
+   \centering
+   \includegraphics[scale=0.7]{architecture.png}
+\end{figure}
+\green{Init:}
+\begin{minted}[linenos=true]{cpp}
+T* gpup;
+int sz = 10*sizeof(int);
+cudaMalloc((void**)&gpup, sz);
+\end{minted}
 \green{Memory Transfer:}
-\begin{lstlisting}[language=c++]
-cudaMemcpy(_gpu_pointer, _cpu_pointer, nBytes, cudaMemcpyHostToDevice));
-\end{lstlisting}
+\begin{minted}[linenos=true]{cpp}
+cudaMemcpy(gpup, cpup, nBytes, cudaMemcpyHostToDevice);
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Ideas for Memory Management}
-\begin{lstlisting}[language=c++]
-template <typename T>
+\begin{minted}[linenos=true]{cpp}
 class Storage {
    public:
     explicit Storage(const std::vector<T>&);
@@ -182,7 +167,7 @@ class Storage {
     T* _gpu_pointer;
     void initialize_gpu_memory();
 };
-\end{lstlisting}
+\end{minted}
 \begin{itemize}
     \item Memory pool, takes ownership
     \item Initializes the gpu memory as copy
@@ -192,7 +177,7 @@ class Storage {
 
 \begin{frame}[fragile]
     \frametitle{Lazy Memory Sync}
-\begin{lstlisting}[language=c++]
+\begin{minted}[linenos=true]{cpp}
 class Storage {
    public:
     T* cpu_pointer();
@@ -201,19 +186,21 @@ class Storage {
     const T* gpu_pointer_const();
 
    private:
-    std::string head;
+    std::string head; \\ head = {CPU, GPU, SYNC}
     void sync_to_cpu();
     void sync_to_gpu();
 };
-\end{lstlisting}
+\end{minted}
+\green{Example:}
 \begin{itemize}
-    \item accesses const or non-const pointers
-    \item $\text{head} \in \lbrace \text{CPU}, \text{GPU}, \text{SYNC} \rbrace $
-    \item if non-const function: change $\text{head}$  to location
-    \item Lazily sync if required pointer $!= \text{head}$
+    \item After Initialization, \mintinline{c++}{head = SYNC}
+    \item Access, \mintinline{c++}{gpu_pointer_const(), head} remains
+    \item Access \mintinline{c++}{cpu_pointer(): head = CPU}
+    \item Acess \mintinline{c++}{gpu_pointer(): sync_to_cpu(); head = SYNC}
 \end{itemize}
 \end{frame}
 
+\section{Mapping Cuda calls to Hardware}
 \begin{frame}[fragile]
 \frametitle{Launching CUDA threads}
     \green{Cuda Program}
@@ -252,7 +239,7 @@ text depth=.5ex] at (\x,-.3) {$\descr$};
        node [black,midway,below=4pt, font=\scriptsize] {Block 1};
     \end{tikzpicture}
     \green{Addition:}
-\begin{lstlisting}[language=c++]
+\begin{minted}[linenos=true]{cuda}
 __global__ 
 add_kernel(float* A, float* B, float* C, int n) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -260,7 +247,8 @@ add_kernel(float* A, float* B, float* C, int n) {
         C[i] = A[i] + B[i];
     }
 }
-\end{lstlisting}
+\end{minted}
+%\end{lstlisting}
 \end{frame}
 
 \begin{frame}
@@ -425,15 +413,17 @@ C &= \begin{matrix} \underbrace{0 0 1 1}_{\text{Thread 1}} |
 
 \begin{frame}[fragile]
 \frametitle{Comutation Procedure}
-\begin{lstlisting}[language=c++]
+\begin{minted}[linenos=true]{cuda}
 __global__ 
-void paralleMerge(int* a, int sz_a, int* b, int sz_b, int* c, int length) {
+void paralleMerge(int* a, int sz_a, int* b, int sz_b, 
+                  int* c, int length)
+{
     int diag = threadIdx.x * length;
     int a_start = mergepath(a, sz_a, b, sz_b, diag);
     int b_start = diag - a_start;
     merge(a, a_start, sz_a, b, b_start, sz_b, c, diag, length);
 }
-\end{lstlisting}
+\end{minted}
 \begin{itemize}
     \item Each tread works on one part
     \item Thread calculates the value $A_lower$ for itself
