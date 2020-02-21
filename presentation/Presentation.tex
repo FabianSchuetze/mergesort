@@ -33,8 +33,8 @@
 \definecolor{green}{rgb}{0.1054, 0.6171, 0.4648}
 \definecolor{orange}{rgb}{0.8476, 0.3711, 0.0078}
 \definecolor{violet}{rgb}{0.9023, 0.1602, 0.5391}
-%\usepackage[doi=false, backref=true, url=false, isbn=false, backend=biber,
-						%citestyle=authoryear]{biblatex}
+\usepackage[doi=false, backref=true, url=false, isbn=false, backend=biber,
+                        citestyle=authoryear]{biblatex}
 \usepackage{tabu}
 \newcommand{\blue}{\textcolor{blue}}
 \newcommand{\red}{\textcolor{red}}
@@ -72,7 +72,7 @@
 
 \DeclareMathOperator*{\argmax}{\arg\!\max}
 \DeclareMathOperator{\E}{\mathbb{E}}
-%\addbibresource[]{library.bib}
+\addbibresource[]{library.bib}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \setbeamertemplate{caption}{\raggedright\insertcaption\par}
@@ -139,86 +139,36 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{GPUs is fast and easily programmable}
+    \red{Fast:} See number of flops
+    \red{Easy:} CUDA: Extension to C-language, called from C/C++
+\end{frame}
+
+\begin{frame}
 \tableofcontents
 \end{frame}
 
-\section{Architecture}
+
+\section{Simple Program and Big Architecture Ideas}
 
 \begin{frame}[fragile]
-\frametitle{GPU and CPU uses different memories}
-\begin{figure}[ht]
-   \centering
-   \includegraphics[scale=0.7]{architecture.png}
-\end{figure}
-\green{Init:}
-\begin{minted}[linenos=true]{cpp}
-T* gpup;
-int sz = 10*sizeof(int);
-cudaMalloc((void**)&gpup, sz);
-\end{minted}
-\green{Memory Transfer:}
-\begin{minted}[linenos=true]{cpp}
-cudaMemcpy(gpup, cpup, nBytes, cudaMemcpyHostToDevice);
-\end{minted}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Ideas for Memory Management}
-\begin{minted}[linenos=true]{cpp}
-class Storage {
-   public:
-    explicit Storage(const std::vector<T>&);
-
-   private:
-    std::vector<T> _data;
-    T* _cpu_pointer;
-    T* _gpu_pointer;
-    void initialize_gpu_memory();
-};
-\end{minted}
-\begin{itemize}
-    \item Memory pool, takes ownership
-    \item Initializes the gpu memory as copy
-    \item Pointers for cpu/gpu locations
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-    \frametitle{Lazy Memory Sync}
-\begin{minted}[linenos=true]{cpp}
-class Storage {
-   public:
-    T* cpu_pointer();
-    T* gpu_pointer();
-    const T* cpu_pointer_const();
-    const T* gpu_pointer_const();
-
-   private:
-    std::string head; \\ head = {CPU, GPU, SYNC}
-    void sync_to_cpu();
-    void sync_to_gpu();
-};
-\end{minted}
-\green{Example:}
-\begin{itemize}
-    \item After Initialization: \mintinline{c++}{head = SYNC}
-    \item Access, \mintinline{c++}{gpu_pointer_const(): head} remains
-    \item Access \mintinline{c++}{cpu_pointer(): head = CPU}
-    \item Acess \mintinline{c++}{gpu_pointer(): sync_to_cpu(); head = SYNC}
-\end{itemize}
-\end{frame}
-
-\section{Mapping Cuda calls to Hardware}
-\begin{frame}[fragile]
-\frametitle{Launching CUDA threads}
-\green{Cuda Program}
+\frametitle{A Simple Cuda Programm}
+\begin{overlayarea}{\textwidth}{7.1cm}
+%\only<1->{
+\begin{onlyenv}<1->
+\green{1: Call Cuda Program from C/C++:}
 \begin{minted}[linenos=true]{cpp}
 dim3 Grid(2)
 dim3 Block(4)
-add_kernel<<<Grid, Block>>>(...)
+add_arrays<<<Grid, Block>>>(...)
 \end{minted}
-    \green{Thread Layout:}
-    \begin{tikzpicture}
+\end{onlyenv}
+%}
+\begin{onlyenv}<2->
+    \green{2: Blocks \& Grid spawn many threads on GPU:}
+\begin{figure}
+    \centering
+\begin{tikzpicture}
 % draw horizontal line
 \draw[thick,- ] (0,0) -- (3,0) node[font=\scriptsize,below left=3pt and
         -5pt]{};
@@ -245,68 +195,184 @@ text depth=.5ex] at (\x,-.3) {$\descr$};
        node [black,midway,below=4pt, font=\scriptsize] {Block 0};
 \draw [thick ,decorate,decoration={brace,amplitude=5pt}] (8.5,-0.5)  -- +(-4,0) 
        node [black,midway,below=4pt, font=\scriptsize] {Block 1};
-    \end{tikzpicture}
-    \green{Addition:}
+\end{tikzpicture}
+\end{figure}
+%}
+%\only<3->{
+\end{onlyenv}
+\begin{onlyenv}<3->
+\green{3: Cuda Code is a C-Extension:}
 \begin{minted}[linenos=true]{cuda}
 __global__ 
-add_kernel(float* A, float* B, float* C, int n) {
+add_arrays(float* A, float* B, float* C, int n) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     if (i < n) {
         C[i] = A[i] + B[i];
     }
 }
 \end{minted}
+\end{onlyenv}
+\end{overlayarea}
 \end{frame}
 
-\begin{frame}
-\frametitle{Software/Hardware connection}
-\green{Programmer:} Specifies number of blocks and threads
+\begin{frame}[fragile]
+\frametitle{Software/Hardware interface}
 \begin{overlayarea}{\textwidth}{4.5cm}
-\only<1, 3>{
+\begin{onlyenv}<1>
+\begin{figure}
+    \centering
+\begin{minted}[linenos=true]{cpp}
+dim3 Grid(2)
+dim3 Block(4)
+add_arrays<<<Grid, Block>>>(...)
+\end{minted}
+\end{figure}
+\end{onlyenv}
+\only<2>{
 \begin{figure}[ht]
    \centering
    \includegraphics[scale=0.25]{cuda_architecture.png}
 \end{figure}
  }
-\only<2,4>{
+\only<3>{
 \begin{figure}[ht]
    \centering
    \includegraphics[scale=0.25]{sm_dispatch.png}
 \end{figure}
 }
 \end{overlayarea}
-    \begin{overlayarea}{\textwidth}{3.0cm}
+\begin{overlayarea}{\textwidth}{3.0cm}
 \only<1->{
-\red{Dispatch:\\}
+\red{1. Software:} Specify Blocks and Threads\\
+}
+\only<2->{
+\red{2. Hardware:\\}
 \green{1. Blocks to SM:} Block 1 $\rightarrow$ SM1, Block 2 $\rightarrow$
     SM2 $\ldots$\\
 }
-\only<2->{
-\green{2. Grouping:} Wrappend threads are allocated\\
-}
 \only<3->{
-\red{Stengths:\\}
-\green{Quantity: } No branch prediction/ chaches, just cores\\
-}
-\only<4->{
-\green{Latency Hiding:} If wrap 1 stalls, scheduler starts wrap 2 
+\green{2. Threads to Processors:} Wrappend threads are allocated\\
 }
 \end{overlayarea}
 \end{frame}
 
+\begin{frame}
+\frametitle{Reasons for strong GPU performance}
+
+\begin{overlayarea}{\textwidth}{5.0cm}
+\only<1>{
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.30]{amd.png}
+\end{figure}
+}
+\only<2>{
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.30]{cuda_architecture.png}
+\end{figure}
+}
+\only<3>{
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.30]{sm_dispatch.png}
+\end{figure}
+}
+\end{overlayarea}
+\begin{overlayarea}{\textwidth}{3.0cm}
+\only<1->{
+    \red{CPU:} Chip full with fancy Branch Prediction, Caches, etc.
+}
+\only<2->{
+\red{GPU:\\} 
+    1. \green{Simplicity:} Just Cores on chip\\
+}
+    \only<3->{
+    2.  \green{Multithreading:} Wrap 1 in a long-latency op: Start Wrap 2
+}
+\end{overlayarea}
+\end{frame}
+
+%\begin{frame}[fragile]
+%\frametitle{GPU and CPU uses different memories}
+%\begin{figure}[ht]
+   %\centering
+   %\includegraphics[scale=0.7]{architecture.png}
+%\end{figure}
+%\green{Init:}
+%\begin{minted}[linenos=true]{cpp}
+%T* gpup;
+%int sz = 10*sizeof(int);
+%cudaMalloc((void**)&gpup, sz);
+%\end{minted}
+%\green{Memory Transfer:}
+%\begin{minted}[linenos=true]{cpp}
+%cudaMemcpy(gpup, cpup, nBytes, cudaMemcpyHostToDevice);
+%\end{minted}
+%\end{frame}
+
+%\begin{frame}[fragile]
+%\frametitle{Ideas for Memory Management}
+%\begin{minted}[linenos=true]{cpp}
+%class Storage {
+   %public:
+    %explicit Storage(const std::vector<T>&);
+
+   %private:
+    %std::vector<T> _data;
+    %T* _cpu_pointer;
+    %T* _gpu_pointer;
+    %void initialize_gpu_memory();
+%};
+%\end{minted}
+%\begin{itemize}
+    %\item Memory pool, takes ownership
+    %\item Initializes the gpu memory as copy
+    %\item Pointers for cpu/gpu locations
+%\end{itemize}
+%\end{frame}
+
+%\begin{frame}[fragile]
+    %\frametitle{Lazy Memory Sync}
+%\begin{minted}[linenos=true]{cpp}
+%class Storage {
+   %public:
+    %T* cpu_pointer();
+    %T* gpu_pointer();
+    %const T* cpu_pointer_const();
+    %const T* gpu_pointer_const();
+
+   %private:
+    %std::string head; \\ head = {CPU, GPU, SYNC}
+    %void sync_to_cpu();
+    %void sync_to_gpu();
+%};
+%\end{minted}
+%\green{Example:}
+%\begin{itemize}
+    %\item After Initialization: \mintinline{c++}{head = SYNC}
+    %\item Access, \mintinline{c++}{gpu_pointer_const(): head} remains
+    %\item Access \mintinline{c++}{cpu_pointer(): head = CPU}
+    %\item Acess \mintinline{c++}{gpu_pointer(): sync_to_cpu(); head = SYNC}
+%\end{itemize}
+%\end{frame}
+
+%\section{Mapping Cuda calls to Hardware}
+
 \section{Merge}
 
 \begin{frame}[fragile]
-\frametitle{Basic Merge Operation}
+\frametitle{Serial Merge}
+\setlength\abovedisplayskip{-2.0pt}
 \begin{align*}
-    A &= \begin{matrix} 5 & 7 & 8& &  9&  12&  14&  15&  16 \end{matrix} \\
-    B &= \begin{matrix} 1&  2&  3&  4&  6&  10&  11&  13 \end{matrix} \\
-        C &= \begin{matrix} ?&  ?&  ?&  ?&  ?&  ?&  ?& \ldots & ? \end{matrix}
+    A &= \begin{bmatrix} 5 & 7 & 8& 12 \end{bmatrix} \\
+    B &= \begin{bmatrix} 3&  4&  6&  10 \end{bmatrix} \\
+        C &= \begin{bmatrix} ?&  ?&  ?&  ?&  ?&  ?&  ?& ? \end{bmatrix}
 \end{align*}
 \begin{minted}[linenos=true]{c++}
 void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
     int i = 0, j = 0, k = 0;
-    while (k < sz_a + sz_b) {
+    while (k < sz_a + sz_b)
         if (i == sz_a)
             c[k++] = b[j++];
         else if (j == sz_b)
@@ -315,10 +381,9 @@ void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
             c[k++] = a[i++];
         else
             c[k++] = b[j++];
-    }
 }
 \end{minted}
-\green{Problem:} complexity, $\mathcal{O}(n)$
+\red{Problem:} complexity, $\mathcal{O}(n)$
 \end{frame}
 
 \begin{frame}
@@ -356,107 +421,110 @@ void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
 
 \begin{frame}
 \frametitle{Instead: How to split arrays}
-NEED TO CITE PAPER!
-\begin{overlayarea}{\textwidth}{5.0cm}
+\textcite{odeh_merge_2012}
+\begin{overlayarea}{\textwidth}{7.4cm}
 \only<1>{
    \begin{figure}[ht]
        \centering
        \textbf{How to split two arrays in equal chuncks?}
-       \includegraphics[scale=0.17]{initial.png}
+       \includegraphics[scale=0.22]{initial.png}
     \end{figure}
  }
 \only<2>{
    \begin{figure}[ht]
    \centering
-       \textbf{One feasible split: Array A to Thread 1, Array B to Thread 2}
-   \includegraphics[scale=0.17]{feasible_1.png}
+       \textbf{Feasible split: Array A to Thread 1, B to Thread 2}
+   \includegraphics[scale=0.22]{feasible_1.png}
     \end{figure}
  }
 \only<3>{
    \begin{figure}[ht]
    \centering
-   \textbf{Another feasible split: Array B to Thread 1, Array A to Thread 2}
-   \includegraphics[scale=0.17]{feasible_2.png}
+   \textbf{Another split: Array B to Thread 1,  A to Thread 2}
+   \includegraphics[scale=0.22]{feasible_2.png}
     \end{figure}
  }
 \only<4>{
    \begin{figure}[ht]
    \centering
-   \textbf{Another split (seen before): Thread 1 gets half of A and B}
-   \includegraphics[scale=0.17]{feasible_3.png}
+   \textbf{Another (as before): Thread 1 gets half of A and B}
+   \includegraphics[scale=0.22]{feasible_3.png}
     \end{figure}
     \red{Summary:} All allocations along vertical line split work equally!
  }
 \only<5>{
    \begin{figure}[ht]
    \centering
-   \textbf{Mergepath: Define the optimal split: One Elemet of B}
-   \includegraphics[scale=0.17]{mergepath_1.png}
+   \textbf{Mergepath: Optimal split: One Elemet of B}
+   \includegraphics[scale=0.22]{mergepath_1.png}
     \end{figure}
-    \red{Summary:} All allocations along vertical line split work equally!
+    \green{Summary:} All allocations along vertical line split work equally!
     \green{Mergpath:} Vertical move: pick array B; horizontal move: Array
  }
 \only<6>{
    \begin{figure}[ht]
    \centering
-   \textbf{Mergepath: Define the optimal split: Another Elemet of B}
-   \includegraphics[scale=0.17]{mergepath_2.png}
+   \textbf{Mergepath: Optimal split: Another Elemet of B}
+   \includegraphics[scale=0.22]{mergepath_2.png}
     \end{figure}
+    \green{Summary:} All allocations along vertical line split work equally!
+    \green{Mergpath:} Vertical move: pick array B; horizontal move: Array
  }
 \only<7>{
    \begin{figure}[ht]
    \centering
-   \textbf{Mergepath: Define the optimal split: Another Elemet of B}
-   \includegraphics[scale=0.17]{mergepath_3.png}
+   \textbf{Mergepath: Optimal split: Another Elemet of B}
+   \includegraphics[scale=0.22]{mergepath_3.png}
     \end{figure}
+    \green{Summary:} All allocations along vertical line split work equally!
+    \green{Mergpath:} Vertical move: pick array B; horizontal move: Array
  }
 \only<8>{
    \begin{figure}[ht]
    \centering
-   \textbf{Mergepath: Define the optimal split: Another Elemet of B}
-   \includegraphics[scale=0.17]{mergepath_4.png}
+   \textbf{Mergepath: Optimal split: Another Elemet of B}
+   \includegraphics[scale=0.22]{mergepath_4.png}
     \end{figure}
+    \green{Summary:} All allocations along vertical line split work equally!
+    \green{Mergpath:} Vertical move: pick array B; horizontal move: Array
  }
 \only<9>{
    \begin{figure}[ht]
    \centering
-   \textbf{Mergepath: Define the optimal split: Pick first elment of A}
-   \includegraphics[scale=0.17]{mergepath_5.png}
+   \textbf{Mergepath: Optimal split: First elment of A}
+   \includegraphics[scale=0.22]{mergepath_5.png}
     \end{figure}
+    \green{Summary:} All allocations along vertical line split work equally!
+    \green{Mergpath:} Vertical move: pick array B; horizontal move: Array
  }
 \only<10>{
-   \begin{figure}[ht]
-   \centering
-   \includegraphics[scale=0.17]{mergepath_6.png}
-    \end{figure}
- }
-\only<11>{
-   \begin{figure}[ht]
-   \centering
-   \includegraphics[scale=0.17]{mergepath_7.png}
-    \end{figure}
+\begin{figure}[ht]
+\centering
+\textbf{Mergepath: Optimal split!}
+\includegraphics[scale=0.22]{mergepath_6.png}
+\end{figure}
+\green{Split index of A:} 3\\
+\green{Split index of B:} 5
  }
 \end{overlayarea}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Computation Procedure}
+\frametitle{Merge with Cuda}
 \begin{minted}[linenos=true]{cuda}
 __global__ 
 void paralleMerge(int* a, int sz_a, int* b, int sz_b, 
                   int* c, int length)
 {
     int diag = threadIdx.x * length;
-    int a_start = mergepath(a, sz_a, b, sz_b, diag);
-    int b_start = diag - a_start;
-    merge(a, a_start, sz_a, b, b_start, sz_b, c, diag, length);
+    int a_split = mergepath(a, sz_a, b, sz_b, diag);
+    int b_split = diag - a_split;
+    merge(a, a_split, sz_a, b, b_split, sz_b, c, diag, length);
 }
 \end{minted}
 \begin{itemize}
-    \item Each tread works on one part
-    \item Thread calculates \mintinline{c++}{$A_lower$} \mintinline{c++}{mergepath}
-    \item Obtain \mintinline{c++}{B_lower} as difference
-    \item merges two sub-arrays
+    \item Each identifies split indices
+    \item Split indices suffice to merge two sub-arrays into c
 \end{itemize}
 \end{frame}
 
@@ -464,7 +532,7 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \frametitle{Problem: Slow as a Snail}
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.25]{global_memory_merge.png}
+\includegraphics[scale=0.35]{global_memory_merge.png}
 \end{figure}
 \end{frame}
 
@@ -488,27 +556,20 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 
 \section{Memory Hirachy of CUDA}
 \begin{frame}
-\frametitle{The different memories and their sizes}
+\frametitle{Different Memories and Size}
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.22]{memory_hirachy.png}
+\includegraphics[scale=0.40]{memory_hirachy.png}
 \end{figure}
-\red{Visibility:}
-\begin{itemize}
-    \item \green{Global Memory:} Accessed by all threads
-    \item \green{Shared Memory:} Private for Block
-    \item \green{Registers:} Private for Thread
-\end{itemize}
-\red{Size:}
-\begin{itemize}
-    \item \green{Global Memory:} 2 GB
-    \item \green{Shared Memory:} Total: 192 KB, per block: 48 KB
-\end{itemize}
-\red{Latency:}
-\begin{itemize}
-    \item \green{Global Memory:} 8 GB/s
-    \item \green{Shared Memory:} 80 GB/s
-\end{itemize}
+\red{Visibility:\\}
+\green{Global $\Leftrightarrow$ Shared:} All threads $\Leftrightarrow$
+        Private for Block\\
+\red{Size:\\}
+\green{Global $\Leftrightarrow$ Shared:} 2 GB $\Leftrightarrow$
+    Total: 192 KB, per block: 48 KB\\
+\red{Latency:\\}
+\green{Global $\Leftrightarrow$ Shared:} 8 GB/s $\Leftrightarrow$
+    80 GB/s
 \end{frame}
 
 \section{Merging with local memory}
@@ -565,5 +626,9 @@ void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
 \centering
 \includegraphics[scale=0.22]{shared_memory_merge.png}
 \end{figure}
+\end{frame}
+
+\begin{frame}[t,allowframebreaks]
+\printbibliography[]
 \end{frame}
 \end{document}
