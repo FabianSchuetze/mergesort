@@ -121,7 +121,12 @@
 % %----------------------------------------------------------------------------------------
 \renewcommand*{\thefootnote}{\fnsymbol{footnote}}
 \title[]{Mergesort with CUDA}
-\date{25.02.2020} % Date, can be changed to a custom date
+\date{\parbox{\linewidth}{\centering%
+  25.02.2020\endgraf\bigskip
+  Fork on Github:\\
+  \blue{https://github.com/FabianSchuetze/mergesort}
+  }}
+%\date{25.02.2020} % Date, can be changed to a custom date
 %\author{Fabian Schuetze, EUI}
 \addtobeamertemplate{block begin}{}{\justifying}  %new code
 \setbeamertemplate{itemize items}[circle]
@@ -133,15 +138,21 @@
 
 
 \begin{document}
+\author{Fabian Schuetze}
 
 \begin{frame}
 \titlepage
 \end{frame}
 
 \begin{frame}
-\frametitle{GPUs is fast and easily programmable}
-    \red{Fast:} See number of flops
-    \red{Easy:} CUDA: Extension to C-language, called from C/C++
+\frametitle{GPU: fast, cheap, and approachable}
+    \red{Fast:}
+\begin{figure}[ht]
+   \centering
+   \includegraphics[scale=0.25]{flops.png}
+\end{figure}
+    \red{Cheap:} CPU: $\$400$, GPU: $\$200$\\
+    \red{Approachable:} CUDA: Extension to C, called from C/C++
 \end{frame}
 
 \begin{frame}
@@ -149,7 +160,7 @@
 \end{frame}
 
 
-\section{Simple Program and Big Architecture Ideas}
+\section{Intro I: Simple Program}
 
 \begin{frame}[fragile]
 \frametitle{A Simple Cuda Programm}
@@ -165,7 +176,7 @@ add_arrays<<<Grid, Block>>>(...)
 \end{onlyenv}
 %}
 \begin{onlyenv}<2->
-    \green{2: Blocks \& Grid spawn many threads on GPU:}
+    \green{2: Blocks \& Grid spawn Threads:}
 \begin{figure}
     \centering
 \begin{tikzpicture}
@@ -215,9 +226,10 @@ add_arrays(float* A, float* B, float* C, int n) {
 \end{overlayarea}
 \end{frame}
 
+\section{Intro II: Nvidia's two big Architecture Decisions}
 \begin{frame}[fragile]
 \frametitle{Software/Hardware interface}
-\begin{overlayarea}{\textwidth}{4.5cm}
+\begin{overlayarea}{\textwidth}{4.9cm}
 \begin{onlyenv}<1>
 \begin{figure}
     \centering
@@ -231,12 +243,14 @@ add_arrays<<<Grid, Block>>>(...)
 \only<2>{
 \begin{figure}[ht]
    \centering
+    \textbf{GPU: Rectangles are Sets of Processors}
    \includegraphics[scale=0.25]{cuda_architecture.png}
 \end{figure}
  }
 \only<3>{
 \begin{figure}[ht]
    \centering
+    \textbf{GPU: Group of Threads allocated to Processors}
    \includegraphics[scale=0.25]{sm_dispatch.png}
 \end{figure}
 }
@@ -247,48 +261,52 @@ add_arrays<<<Grid, Block>>>(...)
 }
 \only<2->{
 \red{2. Hardware:\\}
-\green{1. Blocks to SM:} Block 1 $\rightarrow$ SM1, Block 2 $\rightarrow$
+\qquad \green{1. Blocks to SM:} Block 1 $\rightarrow$ SM1, Block 2 $\rightarrow$
     SM2 $\ldots$\\
 }
 \only<3->{
-\green{2. Threads to Processors:} Wrappend threads are allocated\\
+\qquad \green{2. Threads to Processors:} Wrappend threads are allocated\\
 }
 \end{overlayarea}
 \end{frame}
 
 \begin{frame}
 \frametitle{Reasons for strong GPU performance}
+    \textcite{patterson_computer_2009}
 
-\begin{overlayarea}{\textwidth}{5.0cm}
+\begin{overlayarea}{\textwidth}{5.5cm}
 \only<1>{
 \begin{figure}[ht]
 \centering
+\textbf{AMD Opteron: FP and Int Execution Units are small}
 \includegraphics[scale=0.30]{amd.png}
 \end{figure}
 }
 \only<2>{
 \begin{figure}[ht]
 \centering
+\textbf{Nvidia GPU: Small Blocks are Execution Units}
 \includegraphics[scale=0.30]{cuda_architecture.png}
 \end{figure}
 }
 \only<3>{
 \begin{figure}[ht]
 \centering
+\textbf{Multithreading: Context Switches are Cheap}
 \includegraphics[scale=0.30]{sm_dispatch.png}
 \end{figure}
 }
 \end{overlayarea}
-\begin{overlayarea}{\textwidth}{3.0cm}
+\begin{overlayarea}{\textwidth}{2.5cm}
 \only<1->{
     \red{CPU:} Chip full with fancy Branch Prediction, Caches, etc.
 }
 \only<2->{
 \red{GPU:\\} 
-    1. \green{Simplicity:} Just Cores on chip\\
+    \qquad \green{1. Simplicity:} Just Cores on chip\\
 }
     \only<3->{
-    2.  \green{Multithreading:} Wrap 1 in a long-latency op: Start Wrap 2
+    \qquad \green{2. Multithreading:} Wrap1 in long-latency op: Start Wrap2
 }
 \end{overlayarea}
 \end{frame}
@@ -365,8 +383,8 @@ add_arrays<<<Grid, Block>>>(...)
 \frametitle{Serial Merge}
 \setlength\abovedisplayskip{-2.0pt}
 \begin{align*}
-    A &= \begin{bmatrix} 5 & 7 & 8& 12 \end{bmatrix} \\
-    B &= \begin{bmatrix} 3&  4&  6&  10 \end{bmatrix} \\
+    A &= \begin{bmatrix} 5 & 7 & 8& 12 \end{bmatrix}; \quad 
+    B = \begin{bmatrix} 3&  4&  6&  10 \end{bmatrix} \\
         C &= \begin{bmatrix} ?&  ?&  ?&  ?&  ?&  ?&  ?& ? \end{bmatrix}
 \end{align*}
 \begin{minted}[linenos=true]{c++}
@@ -390,27 +408,36 @@ void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
 \frametitle{How to split A and B to spwan many threads?}
 \begin{overlayarea}{\textwidth}{10cm}
 \only<1->{
-\green{Example:}
+\red{Example:}
 \begin{align*}
-    A &= \begin{matrix} 0 & 0&0&0 \end{matrix} \\
-    B &= \begin{matrix} 1&1&1&1 \end{matrix} \\
-    C &= \begin{matrix} ?&?&?&?&?&?&?&? \end{matrix}
+    A &= \begin{bmatrix} 0 & 0&0&0 \end{bmatrix}; \quad 
+    B = \begin{bmatrix} 1&1&1&1 \end{bmatrix} \\
+    C &= \begin{bmatrix} ?&?&?&?&?&?&? \end{bmatrix}
 \end{align*}
 }
 \only<2->{
-\green{Naive:} 2 Threads, half A and B
-%\begin{align*}
-    %A &=  \smash[b]{\block{Thread 1}} & \smash[b]{\block{Thread
-    %2}}  \\
-    %B &= 2
-    %B &= \begin{matrix} \underbrace{1 & 1}_{\text{Thread 1}} | 
-    %\underbrace{1 & 1}_{\text{Thread 2}} \end{matrix} \\
-    %C &= \begin{matrix} \underbrace{? &?& ?& ?}_{\text{Thread 1}} | 
-    %\underbrace{?& ?& ?& ?}_{\text{Thread 2}} \end{matrix}
-%\end{align*}
+\red{Naive:} 2 Threads, half A and B\\
 }
 \only<3->{
-\green{Result:}
+\red{~Result:\\}
+\green{Thread 1: Merge:} 
+\begin{align*}
+    A_1 &= \begin{bmatrix} 0 & 0 \end{bmatrix}; \quad 
+    B_1 = \begin{bmatrix} 1&1 \end{bmatrix}; \qquad
+    C_1 = \begin{bmatrix} 0&0&1&1 \end{bmatrix}
+\end{align*}
+\green{Thread 2: Merge:} 
+\begin{align*}
+    A_2 &= \begin{bmatrix} 0 & 0 \end{bmatrix}; \quad 
+    B_2 = \begin{bmatrix} 1&1 \end{bmatrix}; \qquad
+    C_2 = \begin{bmatrix} 0&0&1&1 \end{bmatrix}
+\end{align*}
+\only<4->{
+    \red{Naive strategy: Doesn't work}
+}
+
+
+
 %\begin{align*}
     %C &= \begin{matrix} \underbrace{0& 0& 1& 1}_{\text{Thread 1}} | 
     %\underbrace{0& 0& 1& 1}_{\text{Thread 2}} \end{matrix}
@@ -421,7 +448,7 @@ void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
 
 \begin{frame}
 \frametitle{Instead: How to split arrays}
-\textcite{odeh_merge_2012}
+    \textcite{odeh_merge_2012}; \textcite{baxter_intro_2016}
 \begin{overlayarea}{\textwidth}{7.4cm}
 \only<1>{
    \begin{figure}[ht]
@@ -510,7 +537,7 @@ void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Merge with Cuda}
+    \frametitle{Merge with Cuda (Divide-and-Conquer)}
 \begin{minted}[linenos=true]{cuda}
 __global__ 
 void paralleMerge(int* a, int sz_a, int* b, int sz_b, 
@@ -532,23 +559,24 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \frametitle{Problem: Slow as a Snail}
 \begin{figure}[ht]
 \centering
+    \textbf{\mintinline{c++}{std::merge} (with -O3 optimization) is as fast!}
 \includegraphics[scale=0.35]{global_memory_merge.png}
 \end{figure}
 \end{frame}
 
 \begin{frame}
-\frametitle{Reason: So much global meory access}
+\frametitle{Reason: Too much global meory access}
 \begin{overlayarea}{\textwidth}{5.0cm}
 \only<1>{
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.25]{memory_access_pattern_1.png}
+\includegraphics[scale=0.30]{memory_access_pattern_1.png}
 \end{figure}
 }
 \only<2>{
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.25]{memory_access_pattern_3.png}
+\includegraphics[scale=0.30]{memory_access_pattern_3.png}
 \end{figure}
 }
 \end{overlayarea}
@@ -556,75 +584,72 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 
 \section{Memory Hirachy of CUDA}
 \begin{frame}
-\frametitle{Different Memories and Size}
+\frametitle{Shared memory: Tiny but Fast}
+    \textcite{kirk_programming_2012}
 \begin{figure}[ht]
 \centering
 \includegraphics[scale=0.40]{memory_hirachy.png}
 \end{figure}
-\red{Visibility:\\}
-\green{Global $\Leftrightarrow$ Shared:} All threads $\Leftrightarrow$
-        Private for Block\\
-\red{Size:\\}
-\green{Global $\Leftrightarrow$ Shared:} 2 GB $\Leftrightarrow$
-    Total: 192 KB, per block: 48 KB\\
-\red{Latency:\\}
-\green{Global $\Leftrightarrow$ Shared:} 8 GB/s $\Leftrightarrow$
-    80 GB/s
+    \begin{table}
+        \centering
+\begin{tabular}{l l}
+    & \green{Global $\Leftrightarrow$ Shared:} \\
+    \green{Visibility:} & All threads $\Leftrightarrow$ Private for Block\\
+    \green{Size:} & 2 GB $\Leftrightarrow$ Total/Block 192/48 KB\\
+    \green{Latency:} &8 GB/s $\Leftrightarrow$ 80 GB/s\\
+\end{tabular}
+    \end{table}
+
+\begin{overlayarea}{\textwidth}{1.1cm}
+\only<2>{
+\red{Conclusion:} Load Subarrays in Shared $\Rightarrow$ faster
+memory access
+}
+\end{overlayarea}
 \end{frame}
 
 \section{Merging with local memory}
-\begin{frame}
-\frametitle{General Idea}
-\red{Problem:} Block shared memory:  48 Kb -> need to make blocks small enough\\
-\red{Solution:}
+
+\begin{frame}[fragile]
+\frametitle{Merging with shared memory: Use MergePath twice}
+\red{1. Problem:} Shared memory tiny: 48 Kb\\~\\
+\red{2. Solution:} Split arrays into subarrays by block\\~\\
+    \red{3. Approach (Divide-and-Conquer twice):}
 \begin{itemize}
-    \item Determine large but small enough chuncks of arrays to load into blocks
+    \item Identify subarrays with \mintinline{c++}{mergepath}; smaller than 48KB
     \item Load into shared memeory
-    \item Each thread determines its range (as before), from shared memory
-    \item Each thread merges subset (as before)
+    \item Threads use \mintinline{c++}{mergepath} again (now from shared memory)
+    \item Threads merge subset (as before)
 \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]
+%\begin{frame}[fragile]
 %\begin{minted}[linenos=true]{cuda}
 %__global__ 
-%void paralleMerge(int* a, int sz_a, int* b, int sz_b, 
-                  %int* c, int length)
-%{
+%void Merge(const int* a, int sz_a, const int* b, int sz_b,
+           %int* c, int* boundaries, int length,
+           %int sz_shared) {
+    %extern __shared__ int shared[];
+    %__shared__ int block_ranges[4];
+    %ranges(block_ranges, sz_a, sz_b, boundaries);
+    %loadtodevice(a, sz_a, b, sz_b, block_ranges, shared);
     %int diag = threadIdx.x * length;
-    %int a_start = mergepath(a, sz_a, b, sz_b, diag);
+    %int a_start =
+        %mergepath(shared, block_ranges[2], &shared[block_ranges[2]],
+                  %block_ranges[3], diag);
     %int b_start = diag - a_start;
-    %merge(a, a_start, sz_a, b, b_start, sz_b, c, diag, length);
+    %merge(shared, a_start, block_ranges[2], &shared[block_ranges[2]],
+          %b_start, block_ranges[3], c, diag + blockIdx.x * sz_shared,
+          %length);
 %}
 %\end{minted}
-\begin{minted}[linenos=true]{cuda}
-__global__ 
-void paralleMerge(const int* a, int sz_a, const int* b, int sz_b,
-                 int* c, int* boundaries, int length,
-                 int size_shared) {
-    extern __shared__ int shared[];
-    __shared__ int block_ranges[4];
-    ranges(block_ranges, sz_a, sz_b, boundaries);
-    loadtodevice(a, sz_a, b, sz_b, block_ranges, shared);
-    int diag = threadIdx.x * length;
-    if (diag < block_ranges[2] + block_ranges[3]) {
-        int a_start =
-            mergepath(shared, block_ranges[2], &shared[block_ranges[2]],
-                      block_ranges[3], diag);
-        int b_start = diag - a_start;
-        merge(shared, a_start, block_ranges[2], &shared[block_ranges[2]],
-              b_start, block_ranges[3], c, diag + blockIdx.x * size_shared,
-              length);
-    }
-}
-\end{minted}
-\end{frame}
+%\end{frame}
 
 \begin{frame}
-\frametitle{Show the results}
+    \frametitle{With Shared Memory: GPU faster than \mintinline{c++}{std::merge}}
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.22]{shared_memory_merge.png}
+\includegraphics[scale=0.35]{shared_memory_merge.png}
 \end{figure}
 \end{frame}
 
