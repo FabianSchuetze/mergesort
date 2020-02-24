@@ -568,7 +568,8 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
     int diag = threadIdx.x * length;
     int a_split = mergepath(a, sz_a, b, sz_b, diag);
     int b_split = diag - a_split;
-    merge(a, a_split, sz_a, b, b_split, sz_b, c, diag, length);
+    merge(a, a_split, sz_a, b, b_split, sz_b, c, diag, 
+          length);
 }
 \end{minted}
 \begin{itemize}
