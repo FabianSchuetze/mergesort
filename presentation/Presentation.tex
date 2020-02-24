@@ -152,7 +152,7 @@
    \includegraphics[scale=0.25]{flops.png}
 \end{figure}
     \red{Cheap:} CPU: $\$400$, GPU: $\$200$\\
-    \red{Approachable:} CUDA: Extension to C, called from C/C++
+    \red{Approachable:} CUDA: C++ Syntax, called from C and C++
 \end{frame}
 
 \begin{frame}
@@ -163,15 +163,15 @@
 \section{Intro I: Simple Program}
 
 \begin{frame}[fragile]
-\frametitle{A Simple Cuda Programm}
+\frametitle{A Simple Cuda Program}
 \begin{overlayarea}{\textwidth}{7.1cm}
 %\only<1->{
 \begin{onlyenv}<1->
-\green{1: Call Cuda Program from C/C++:}
+\green{1: Call Cuda Program from C and C++:}
 \begin{minted}[linenos=true]{cpp}
 dim3 Grid(2)
 dim3 Block(4)
-add_arrays<<<Grid, Block>>>(...)
+square<<<Grid, Block>>>(...)
 \end{minted}
 \end{onlyenv}
 %}
@@ -212,18 +212,40 @@ text depth=.5ex] at (\x,-.3) {$\descr$};
 %\only<3->{
 \end{onlyenv}
 \begin{onlyenv}<3->
-\green{3: Cuda Code is a C-Extension:}
+\green{3: Cuda Code follows C++ Syntax with Extension:}
 \begin{minted}[linenos=true]{cuda}
-__global__ 
-add_arrays(float* A, float* B, float* C, int n) {
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
-    if (i < n) {
-        C[i] = A[i] + B[i];
+__global__ void square(int *array, int n) {
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+    if (tid < n) {
+        array[tid] = array[tid] * array[tid];
     }
 }
 \end{minted}
 \end{onlyenv}
 \end{overlayarea}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{How a full CUDA Program is Run:}
+\begin{minted}[linenos=true]{cuda}
+__global__ void square(int *array, int n) {
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+    if (tid < n) array[tid] = array[tid] * array[tid];
+}
+
+int main() {
+    int a[3]; fill_array(a, 3);
+    // 1. Initialize Memory on GPU and copy from RAM//
+    unsigned int sz = 3 * sizeof(int);
+    int* d_a;
+    cudaMalloc((int**)&d_a, sz);
+    cudaMemcpy(d_a, a, sz, cudaMemcpyHostToDevice);
+    // 2. Define Thread Structure and Launch Kernel //
+    dim3 block(4), grid(2);
+    square<<<grid, block>>>(d_a, 3);
+    // 2. Copy GPU memory back to RAM //
+    cudaMemcpy(a, d_a, sz, cudaMemcpyDeviceToHost);
+\end{minted}
 \end{frame}
 
 \section{Intro II: Nvidia's two big Architecture Decisions}
@@ -234,9 +256,9 @@ add_arrays(float* A, float* B, float* C, int n) {
 \begin{figure}
     \centering
 \begin{minted}[linenos=true]{cpp}
-dim3 Grid(2)
-dim3 Block(4)
-add_arrays<<<Grid, Block>>>(...)
+dim3 block(4);
+dim3 grid(2);
+square<<<grid, block>>>(...);
 \end{minted}
 \end{figure}
 \end{onlyenv}
@@ -265,7 +287,7 @@ add_arrays<<<Grid, Block>>>(...)
     SM2 $\ldots$\\
 }
 \only<3->{
-\qquad \green{2. Threads to Processors:} Wrappend threads are allocated\\
+\qquad \green{2. Threads to Processors:} Wrapped threads are allocated\\
 }
 \end{overlayarea}
 \end{frame}
@@ -565,7 +587,7 @@ void paralleMerge(int* a, int sz_a, int* b, int sz_b,
 \end{frame}
 
 \begin{frame}
-\frametitle{Reason: Too much global meory access}
+\frametitle{Reason: Too much global memory access}
 \begin{overlayarea}{\textwidth}{5.0cm}
 \only<1>{
 \begin{figure}[ht]
