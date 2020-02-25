@@ -328,7 +328,7 @@ square<<<grid, block>>>(...);
     \qquad \green{1. Simplicity:} Just Cores on chip\\
 }
     \only<3->{
-    \qquad \green{2. Multithreading:} Wrap1 in long-latency op: Start Wrap2
+    \qquad \green{2. Multithreading:} Warp1 in long-latency op: Start Warp2
 }
 \end{overlayarea}
 \end{frame}
@@ -406,8 +406,8 @@ square<<<grid, block>>>(...);
 \setlength\abovedisplayskip{-2.0pt}
 \begin{align*}
     A &= \begin{bmatrix} 5 & 7 & 8& 12 \end{bmatrix}; \quad 
-    B = \begin{bmatrix} 3&  4&  6&  10 \end{bmatrix} \\
-        C &= \begin{bmatrix} ?&  ?&  ?&  ?&  ?&  ?&  ?& ? \end{bmatrix}
+    B = \begin{bmatrix} 3&  4&  6&  10 \end{bmatrix}; \quad
+        C = \begin{bmatrix} ?&  \ldots  & ? \end{bmatrix}
 \end{align*}
 \begin{minted}[linenos=true]{c++}
 void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
@@ -423,7 +423,8 @@ void merge(T* a, T* b, T* c, int sz_a, int sz_b) {
             c[k++] = b[j++];
 }
 \end{minted}
-\red{Problem:} complexity, $\mathcal{O}(n)$
+\red{Problem:} Complexity, $\mathcal{O}(n)$\\
+\red{Divide-and-Conquer?} $p$ Threads, per thread work: $\mathcal{O}(n/p)$?
 \end{frame}
 
 \begin{frame}
@@ -565,7 +566,8 @@ __global__
 void paralleMerge(int* a, int sz_a, int* b, int sz_b, 
                   int* c, int length)
 {
-    int diag = threadIdx.x * length;
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+    int diag = tid * length;
     int a_split = mergepath(a, sz_a, b, sz_b, diag);
     int b_split = diag - a_split;
     merge(a, a_split, sz_a, b, b_split, sz_b, c, diag, 
